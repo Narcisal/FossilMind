@@ -68,42 +68,25 @@ def step_1_identify_from_text(user_description):
     return result
 
 def step_2_visualize_from_text(identification_result):
-    """第二階段：根據鑑定結果生成演化分支圖 (Cladogram)"""
-    print("\n🌳 --- Step 2: 正在生成演化分支圖 (Graphviz)... ---")
+    """第二階段：根據鑑定結果生成「美觀版」演化分支圖"""
+    print("\n🌳 --- Step 2: 正在生成演化分支圖 (套用教科書風格)... ---")
     
-    # 這裡的 Prompt 是關鍵：我們要求它畫出「旁系群 (Sister Groups)」
+    # 這裡的 Prompt 是關鍵：我們要求它畫出「旁系群 (Sister Groups)」並設定美學
     prompt = f"""
     基於以下古生物資訊：
     {identification_result}
 
     請幫我畫出一個「演化分支圖 (Phylogenetic Tree)」，使用 Graphviz DOT 語言。
     
-    **重要規則：**
-    1. **必須包含旁系群 (Sister Groups)：** 為了讓圖看起來像一棵樹，請在「目 (Order)」或「科 (Family)」的層級，隨機加入 1~2 個該生物的「近親」或「其他分支」作為對照。
-    2. **版面設定：** 使用 `rankdir=LR;` (從左到右演化)。
-    3. **樣式設定：** 節點使用方形 (`shape=box`)，線條要清楚。
-    4. **只輸出程式碼：** 不要任何解釋，開頭用 ```dot ，結尾用 ```。
-
-    **參考範例格式 (請模仿這個結構但換成你的資料)：**
-    ```dot
-    digraph G {{
-        rankdir=LR;
-        node [fontname="Helvetica", shape=box, style=filled, fillcolor="#f0f0f0"];
-        edge [dir=none]; // 演化圖通常不需要箭頭，或使用 forward
-
-        // 定義層級
-        "Mollusca (軟體動物門)" -> "Bivalvia (雙殼綱)";
-        "Bivalvia (雙殼綱)" -> "Ostreida (牡蠣目)";
-        
-        // 這裡要分岔，展現演化樹的樣子
-        "Ostreida (牡蠣目)" -> "Gryphaeidae (卷嘴蠣科)";
-        "Ostreida (牡蠣目)" -> "Ostreidae (真牡蠣科)"; // 這是旁系群，讓圖變豐富
-        
-        // 目標化石
-        "Gryphaeidae (卷嘴蠣科)" -> "Exogyra (外旋貝屬)";
-        "Exogyra (外旋貝屬)" [fillcolor="gold", style="filled,rounded"]; // 強調目標
-    }}
-    ```
+    **美學設計要求 (請嚴格遵守)：**
+    1. **版面：** 使用 `rankdir=LR` (由左至右)。
+    2. **線條：** 設定 `splines=ortho` (折線風格)，讓圖表看起來像科學圖鑑。
+    3. **節點 (Nodes)：** - 使用 `shape=box`，但是設定 `style="filled,rounded"` (圓角矩形)。
+       - 填滿顏色使用淡米色 (`#F5F5DC`) 或淡綠色 (`#E0F2F1`)。
+       - 字體使用 `fontname="Arial"` 或 `Sans-Serif`。
+    4. **目標強調：** 最終的化石節點 (你的鑑定結果)，請用 **金黃色 (`#FFD700`)** 或 **深綠色** 強調顯示。
+    5. **結構：** 必須包含 1~2 個旁系群 (Sister Groups) 以展現分支感。
+    6. **只輸出程式碼：** 不要任何解釋，前後不要有 ```dot 符號。
     """
     
     dot_code = call_llm(prompt)
