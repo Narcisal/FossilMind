@@ -1,0 +1,24 @@
+digraph elephant_tree {
+    rankdir=LR;
+    splines=ortho;
+    node [shape=box, style="filled,rounded", fillcolor="#E0F2F1"];
+    Root [label="Elephantiformes"];
+    SG1 [label="Stegodon"];
+    SG2 [label="Gomphotherium"];
+    Elephantidae [label="Elephantidae"];
+    AsianElephant [label="Elephas maximus\n(Asian Elephant)"];
+    AfricanElephant [label="Loxodonta africana\n(African Elephant)"];
+    MammuthusRoot [label="Mammuthus"];
+    MammuthusMeridionalis [label="Mammuthus meridionalis"];
+    MammuthusTrogontherii [label="Mammuthus trogontherii"];
+    MammuthusPrimigenius [label="Mammuthus primigenius\n(Mammoth)"; fillcolor="#FFD700"];
+    Root -> SG1;
+    Root -> SG2;
+    Root -> Elephantidae;
+    Elephantidae -> AsianElephant;
+    Elephantidae -> AfricanElephant;
+    Elephantidae -> MammuthusRoot;
+    MammuthusRoot -> MammuthusMeridionalis;
+    MammuthusRoot -> MammuthusTrogontherii;
+    MammuthusRoot -> MammuthusPrimigenius;
+}

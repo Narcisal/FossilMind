@@ -44,7 +44,6 @@ class FossilExpert:
         請根據描述：
         1. 推測學名與中文俗名。
         2. 簡單介紹年代與特徵。
-        3. 用 Markdown 格式排版，重點文字加粗。
         """
         return self._call_llm(prompt)
 
