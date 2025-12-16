@@ -50,15 +50,30 @@ class FossilExpert:
     def generate_evolution_graph(self, fossil_info):
         """Step 2: 畫圖 (輸出 Graphviz DOT 代碼，已套用美學風格)"""
         prompt = f"""
-        基於此資訊：{fossil_info}
-        請幫我畫出一個「演化分支圖 (Phylogenetic Tree)」，使用 Graphviz DOT 語言。
+        你是一位精通 Graphviz DOT 語言的演化生物學家。
         
-        **美學設計要求 (請嚴格遵守)：**
-        1. **版面：** 使用 `rankdir=LR` (由左至右)，`splines=ortho` (折線風格)。
-        2. **節點：** 使用 `shape=box`，設定 `style="filled,rounded"`。填滿顏色使用淡綠色 (`#E0F2F1`)。
-        3. **目標強調：** 最終的化石節點請用 **金黃色 (`#FFD700`)** 強調顯示。
-        4. **結構：** 必須包含 1~2 個旁系群 (Sister Groups) 以展現分支感。
-        5. **只輸出程式碼：** 不要任何解釋，前後不要有 ```dot 符號。
+        【任務目標】
+        請根據以下的「鑑定報告」，繪製一張該物種的演化分類分支圖 (Cladogram)。
+        
+        【鑑定報告內容】
+        {analysis_result}
+        
+        【繪圖規則】
+        1. 語法：必須使用 valid Graphviz DOT syntax (digraph)。
+        2. 節點內容：**嚴格禁止**使用 "Root", "Group A", "Group B" 這種通用詞。必須使用報告中提到的真實學名 (如 "Macaca", "Primates", "Hominidae")。
+        3. 結構：從較大的分類單元 (如目、科) 指向較小的分類單元 (屬、種)。
+        4. 重點標示：請將鑑定報告中最可能的物種節點設為黃色 (style=filled, fillcolor="yellow")。
+        5. 旁系群：若報告中有提到近親，請畫出旁系群分支。
+        6. **只輸出程式碼**：不要解釋，不要用 markdown 包覆，直接給出代碼。
+        
+        【範例結構 (僅供參考格式，不要抄內容)】
+        digraph Evolution {{
+            rankdir=LR;
+            node [shape=box, style=rounded];
+            "Primates (靈長目)" -> "Cercopithecidae (科)";
+            "Cercopithecidae (科)" -> "Macaca (獼猴屬)";
+            "Macaca (獼猴屬)" -> "Macaca cyclopis (台灣獼猴)" [style=filled, fillcolor="yellow"];
+        }}
         """
         result = self._call_llm(prompt)
         # 清除 LLM 可能產生的 markdown 符號
