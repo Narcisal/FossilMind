@@ -38,16 +38,36 @@ class FossilExpert:
             return f"Connection Error: {str(e)}"
 
     def identify_fossil(self, description):
-        """Step 1: 鑑定 (輸出報告)"""
+        """Step 1: 鑑定 (輸出報告) - 嚴格版"""
         prompt = f"""
-        你是一位專業古生物學家。使用者描述：{description}
-        請根據描述：
-        1. 推測學名與中文俗名。
-        2. 簡單介紹年代與特徵。
+        你是一位極度嚴謹的古生物學家與分類學家。使用者描述：{description}
+        
+        【重要警告】
+        1. **絕對禁止捏造學名**：你只能提供「真實存在」於科學紀錄與論文中的學名。
+        2. **禁止自創命名**：不要根據發現地自己拼湊名字（如不要發明 "Caolinguosaurus" 這種不存在的字）。
+        3. **如果特徵模糊**：請回答最接近的「屬 (Genus)」或「科 (Family)」即可，不要強行編造「種 (Species)」。
+        4. **地質背景檢核**：若使用者提到「菜寮溪」、「左鎮」等台灣地名，這些地層多為「更新世 (Pleistocene)」，主要出土哺乳類（如古菱齒象、四不像鹿、水牛、獼猴），**絕對不可能**出現恐龍（Dinosauria）。
+        
+        【任務要求】
+        請根據描述進行鑑定，並依照以下格式輸出：
+        
+        **1. 推測學名與中文俗名**
+        * **學名**：(請填寫真實存在的學名，如 *Elaphurus davidianus*, *Palaeoloxodon*。若不確定種名，寫 *sp.*)
+        * **中文俗名**：(如 四不像鹿、古菱齒象)
+        * **信賴度**：(高/中/低，並說明原因)
+
+        **2. 簡介年代與特徵**
+        * **年代**：(如 更新世，約 40萬-1萬年前)
+        * **特徵對比**：(說明使用者描述的特徵符合該物種的哪些部分)
+        
+        **3. 生存環境與習性**
+        * (簡述當時的古環境)
+
+        **請直接輸出內容，不要用 ```markdown 包覆代碼塊。**
         """
         return self._call_llm(prompt)
 
-    def generate_evolution_graph(self, fossil_info):
+    def generate_evolution_graph(self, analysis_result):
         """Step 2: 畫圖 (輸出 Graphviz DOT 代碼，已套用美學風格)"""
         prompt = f"""
         你是一位精通 Graphviz DOT 語言的演化生物學家。
