@@ -11,16 +11,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
-        /* --- 基礎設定 --- */
         body {
             margin: 0;
-            background-color: #131314;
             color: #E3E3E3;
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
         }
 
-        /* --- 1. Hero Section (主視覺區) --- */
+        /* --- 固定背景層 (負責模糊特效) --- */
+        .fixed-background-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image: url('/static/hero_bg.jpg'); 
+            background-size: cover;
+            background-position: center;
+            filter: blur(0px) brightness(0.8);
+        }
+
+        /* 背景遮罩 */
+        .fixed-background-layer::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+
+        /* --- Hero Section --- */
         .hero {
             height: 100vh;
             display: flex;
@@ -30,21 +51,7 @@
             text-align: center;
             position: relative;
             z-index: 10;
-            
-            /* 👇 修改這裡：換成你的背景圖片路徑 */
-            background-image: url('/static/hero_bg.jpg'); 
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed; /* 讓背景固定不動，更有質感 */
-        }
-
-        /* 加一層黑色遮罩，讓文字看得清楚 */
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); /* 0.6 是透明度，可自己調 */
-            z-index: -1;
+            background-color: transparent;
         }
 
         .hero h1 {
@@ -79,6 +86,7 @@
             transition: transform 0.2s, box-shadow 0.2s;
             display: inline-block;
         }
+
         .cta-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(66, 133, 244, 0.6);
@@ -92,11 +100,11 @@
             animation: bounce 2s infinite;
         }
 
-        /* --- 2. 內容捲動區 --- */
+        /* --- 內容捲動區 --- */
         .content-container { position: relative; }
 
         .story-section {
-            min-height: 100vh; /* 至少一頁高 */
+            min-height: 100vh;
             display: flex;
             align-items: center;
             padding: 50px 10%; 
@@ -105,14 +113,13 @@
             box-sizing: border-box;
         }
 
-        /* 文字框樣式 */
         .text-box {
             max-width: 500px;
-            background-color: rgba(20, 20, 23, 0.9); /* 深色半透明底 */
+            background-color: rgba(20, 20, 23, 0.85);
             padding: 40px;
             border-radius: 20px;
             border: 1px solid #333;
-            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            backdrop-filter: blur(10px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
@@ -120,7 +127,7 @@
             font-size: 2rem;
             margin-top: 0;
             margin-bottom: 20px;
-            color: #a8c7fa; /* 標題淡藍色 */
+            color: #a8c7fa;
         }
 
         .text-box p {
@@ -130,20 +137,11 @@
             margin-bottom: 15px;
         }
 
-        /* 列表樣式優化 */
-        .text-box ul {
-            padding-left: 20px;
-            color: #ddd;
-        }
-        .text-box li {
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-        .text-box strong {
-            color: #fff;
-        }
+        .text-box ul { padding-left: 20px; color: #ddd; }
+        .text-box li { margin-bottom: 10px; line-height: 1.6; }
+        .text-box strong { color: #fff; }
 
-        /* --- 3. 圖片特效區 --- */
+        /* --- 圖片特效區 --- */
         .image-stage {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -156,34 +154,51 @@
 
         .floating-image {
             position: absolute;
-            width: 45vw; /* 圖片大小 */
-            height: 60vh;
-            object-fit: cover;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            width: 45vw;
+            max-height: 70vh;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
             opacity: 0;
-            
-            /* 預設樣式 (若沒放圖) */
-            background-color: #2a2b2e;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #555;
-            font-size: 1.2rem;
-            border: 1px solid #444;
         }
 
-        /* 底部結束區 */
+        /* --- Footer --- */
         .footer-section {
-            height: 50vh;
+            height: 100vh; 
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background-color: #000;
-            z-index: 10;
-            position: relative;
             text-align: center;
+            position: relative;
+            z-index: 10;
+            
+            background-image: url('/static/footer_bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; 
+        }
+
+        .footer-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); 
+            z-index: -1;
+        }
+
+        .footer-section h2 {
+            color: white; 
+            margin-bottom: 40px; 
+            font-size: 4rem; 
+            font-weight: 700;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8); 
+        }
+
+        /* 手機版適配 */
+        @media (max-width: 768px) {
+            .footer-section h2 {
+                font-size: 2.5rem;
+            }
         }
 
         @keyframes bounce {
@@ -191,16 +206,16 @@
             40% {transform: translateY(-10px);}
             60% {transform: translateY(-5px);}
         }
-        
-        /* 手機版調整 */
+
         @media (max-width: 768px) {
             .hero h1 { font-size: 2.5rem; }
-            .floating-image { width: 90vw; height: 40vh; opacity: 0.2 !important; } /* 手機版讓圖片淡一點當背景 */
-            .text-box { background-color: rgba(20,20,23, 0.95); }
+            .floating-image { width: 90vw; height: auto; opacity: 0.2 !important; }
         }
     </style>
 </head>
 <body>
+
+    <div class="fixed-background-layer"></div>
 
     <section class="hero">
         <h1>喚醒沉睡的地球記憶</h1>
@@ -210,7 +225,11 @@
     </section>
 
     <div class="image-stage">
-        <img src="/static/image1.jpg" class="floating-image img-1" alt="台灣古生物足跡"> <img src="/static/image2.jpg" class="floating-image img-2" alt="AI 功能展示">   <img src="/static/image3.jpg" class="floating-image img-3" alt="如何使用">     <img src="/static/image4.jpg" class="floating-image img-4" alt="未來展望">     </div>
+        <img src="/static/image1.png" class="floating-image img-1" alt="台灣古生物足跡">
+        <img src="/static/image2.png" class="floating-image img-2" alt="AI 功能展示">
+        <img src="/static/image3.png" class="floating-image img-3" alt="如何使用">
+        <img src="/static/image4.png" class="floating-image img-4" alt="未來展望">
+    </div>
 
     <div class="content-container">
         
@@ -258,39 +277,67 @@
     </div>
 
     <div class="footer-section">
-        <h2 style="color:white; margin-bottom: 20px;">準備好探索了嗎？</h2>
+        <h2>準備好探索了嗎？</h2>
         <a href="/chat" class="cta-btn">立即開始鑑定</a>
-        <p style="color: #666; margin-top: 50px; font-size: 0.8rem;">© 2025 FossilMind Project. Powered by AI.</p>
+        
+        <p style="color: #aaa; margin-top: 80px; font-size: 0.9rem; position: absolute; bottom: 30px;">
+            © 2025 FossilMind Project. All rights reserved.
+        </p>
     </div>
 
     <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // 自動對應 section-X 到 img-X
+        // --- 1. 圖片進場動畫 (修改版) ---
         const sections = document.querySelectorAll('.story-section');
         
         sections.forEach((section, index) => {
-            // 找出對應的圖片 class (img-1, img-2...)
+            // 找出對應的圖片
             const imgClass = `.img-${index + 1}`;
             const img = document.querySelector(imgClass);
             
             if (!img) return;
 
             // 設定動畫
-            gsap.timeline({
-                scrollTrigger: {
-                    trigger: section,
-                    start: "top center",    // 當區塊頂部到達視窗中間
-                    end: "bottom center",   // 當區塊底部離開視窗中間
-                    toggleActions: "play reverse play reverse",
-                    scrub: 1, // 跟隨滾輪延遲效果
+            gsap.fromTo(img, 
+                // 起始狀態 (隱藏、在右下方)
+                { autoAlpha: 0, x: 100, y: 50, rotate: 5, scale: 0.9 }, 
+                { 
+                    // 結束狀態 (顯示、歸位)
+                    duration: 0.8,      // 動畫時間 0.8 秒
+                    autoAlpha: 1, 
+                    x: 0, 
+                    y: 0, 
+                    rotate: 0, 
+                    scale: 1, 
+                    ease: "power2.out", // 緩衝效果，讓動作更自然
+                    
+                    // 捲動觸發設定
+                    scrollTrigger: {
+                        trigger: section,       // 監聽這個文字區塊
+                        start: "top center",    // 當區塊的頭，碰到視窗中間 -> 進場
+                        end: "bottom center",   // 當區塊的尾，離開視窗中間 -> 退場
+                        
+                        toggleActions: "play reverse play reverse",
+                        
+
+                    }
                 }
-            })
-            .fromTo(img, 
-                { opacity: 0, x: 100, y: 100, rotate: 3, scale: 0.8 }, // 進場前：右下、透明、微轉、縮小
-                { opacity: 1, x: 0, y: 0, rotate: 0, scale: 1, duration: 1, ease: "power2.out" } // 進場後：歸位、清晰
             );
         });
+
+        // --- 2. 背景模糊動畫 (保留原本的 scrub 效果，這樣背景才會有漸進感) ---
+        const bgLayer = document.querySelector('.fixed-background-layer');
+        if(bgLayer) {
+            gsap.to(bgLayer, {
+                filter: "blur(10px) brightness(0.6)",
+                ease: "none",
+                scrollTrigger: {
+                    trigger: ".content-container",
+                    start: "top bottom",
+                    end: "top top",
+                    scrub: true, // 背景模糊保持跟隨滾輪，比較有質感
+                }
+            });
+        }
     </script>
-</body>
-</html>
