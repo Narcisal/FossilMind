@@ -1,2 +1,296 @@
-<h1>這是還沒做好的首頁</h1>
-<a href="/chat">點我去聊天室</a>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FossilMind - 喚醒沉睡的地球記憶</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        /* --- 基礎設定 --- */
+        body {
+            margin: 0;
+            background-color: #131314;
+            color: #E3E3E3;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- 1. Hero Section (主視覺區) --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            
+            /* 👇 修改這裡：換成你的背景圖片路徑 */
+            background-image: url('/static/hero_bg.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* 讓背景固定不動，更有質感 */
+        }
+
+        /* 加一層黑色遮罩，讓文字看得清楚 */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* 0.6 是透明度，可自己調 */
+            z-index: -1;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin: 0;
+            background: linear-gradient(90deg, #4285F4, #9B72CB);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .hero h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-top: 20px;
+            color: #ddd;
+            max-width: 800px;
+            line-height: 1.6;
+            padding: 0 20px;
+        }
+
+        .cta-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: linear-gradient(90deg, #4285F4, #9B72CB);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(66, 133, 244, 0.6);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 30px;
+            color: #aaa;
+            font-size: 0.9rem;
+            animation: bounce 2s infinite;
+        }
+
+        /* --- 2. 內容捲動區 --- */
+        .content-container { position: relative; }
+
+        .story-section {
+            min-height: 100vh; /* 至少一頁高 */
+            display: flex;
+            align-items: center;
+            padding: 50px 10%; 
+            position: relative;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        /* 文字框樣式 */
+        .text-box {
+            max-width: 500px;
+            background-color: rgba(20, 20, 23, 0.9); /* 深色半透明底 */
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .text-box h3 {
+            font-size: 2rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #a8c7fa; /* 標題淡藍色 */
+        }
+
+        .text-box p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+
+        /* 列表樣式優化 */
+        .text-box ul {
+            padding-left: 20px;
+            color: #ddd;
+        }
+        .text-box li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .text-box strong {
+            color: #fff;
+        }
+
+        /* --- 3. 圖片特效區 --- */
+        .image-stage {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-image {
+            position: absolute;
+            width: 45vw; /* 圖片大小 */
+            height: 60vh;
+            object-fit: cover;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            opacity: 0;
+            
+            /* 預設樣式 (若沒放圖) */
+            background-color: #2a2b2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 1.2rem;
+            border: 1px solid #444;
+        }
+
+        /* 底部結束區 */
+        .footer-section {
+            height: 50vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            z-index: 10;
+            position: relative;
+            text-align: center;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+        
+        /* 手機版調整 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .floating-image { width: 90vw; height: 40vh; opacity: 0.2 !important; } /* 手機版讓圖片淡一點當背景 */
+            .text-box { background-color: rgba(20,20,23, 0.95); }
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <h1>喚醒沉睡的地球記憶</h1>
+        <h2>FossilMind —— 你的專屬 AI 古生物鑑定師。<br>只要一句描述，為你揭開手中化石的身世之謎。</h2>
+        <a href="/chat" class="cta-btn">開始鑑定旅程 🦖</a>
+        <div class="scroll-hint">↓ 往下捲動開始探索</div>
+    </section>
+
+    <div class="image-stage">
+        <img src="/static/image1.jpg" class="floating-image img-1" alt="台灣古生物足跡"> <img src="/static/image2.jpg" class="floating-image img-2" alt="AI 功能展示">   <img src="/static/image3.jpg" class="floating-image img-3" alt="如何使用">     <img src="/static/image4.jpg" class="floating-image img-4" alt="未來展望">     </div>
+
+    <div class="content-container">
+        
+        <section class="story-section section-1">
+            <div class="text-box">
+                <h3>01. 腳下的寶藏：臺灣的古生物足跡</h3>
+                <p>臺灣島約在 600 萬年前透過蓬萊造山運動浮出海面，隨著板塊擠壓不斷「長高」。在一萬八千年前的末代冰河期，臺灣海峽形成陸橋，這座島嶼成為了古代巨獸（如古菱齒象、猛獁象、四不像鹿）的避難天堂與遷徙樞紐。</p>
+                <p>因此，從台南菜寮溪的河床到海邊的岩層，臺灣處處埋藏著豐富的化石寶藏。FossilMind 致力於運用 AI 技術，連結過去與現在，協助你分辨手中那顆「奇形怪狀」的石頭。</p>
+            </div>
+        </section>
+
+        <section class="story-section section-2">
+            <div class="text-box">
+                <h3>02. AI 如何協助你？</h3>
+                <ul>
+                    <li><strong>🔍 精準鑑定：</strong>輸入你的觀察，AI 立即分析並推測最可能的物種學名。</li>
+                    <li><strong>📚 生態還原：</strong>告訴你它活在哪個年代？吃什麼？當時的台灣長什麼樣子？</li>
+                    <li><strong>🌳 演化系譜：</strong>獨家生成「演化分支圖」，讓你一目了然該物種與現代生物的親緣關係。</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="story-section section-3">
+            <div class="text-box">
+                <h3>03. 三步驟，聽懂石頭說話</h3>
+                <ul>
+                    <li><strong>1. 仔細觀察：</strong>拿起你的標本，觀察它的細節。</li>
+                    <li><strong>2. 輸入特徵：</strong>告訴 FossilMind 發現地點（如菜寮溪）、外觀特徵（如琺瑯質光澤、層疊紋路）。</li>
+                    <li><strong>3. 獲取報告：</strong>等待數秒，接收你的專屬鑑定報告與演化圖表。</li>
+                </ul>
+                <p style="font-size: 0.9rem; color: #888; border-left: 3px solid #666; padding-left: 10px;">
+                    💡 範例：「我在台南左鎮撿到一個巴掌大的石頭，顏色很深，上面有像波浪一樣層層疊疊的紋路，摸起來很光滑...」
+                </p>
+            </div>
+        </section>
+
+        <section class="story-section section-4">
+            <div class="text-box">
+                <h3>04. 持續進化的 FossilMind</h3>
+                <p>目前 FossilMind 專注於文字特徵的分析推理。我們知道文字描述難免有誤差，因此開發團隊正致力於研發 <strong>「AI 影像辨識功能」</strong>。</p>
+                <p>未來，你只需拍張照，FossilMind 就能結合「視覺」與「知識庫」，提供更精確、更直覺的鑑定體驗。</p>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="footer-section">
+        <h2 style="color:white; margin-bottom: 20px;">準備好探索了嗎？</h2>
+        <a href="/chat" class="cta-btn">立即開始鑑定</a>
+        <p style="color: #666; margin-top: 50px; font-size: 0.8rem;">© 2025 FossilMind Project. Powered by AI.</p>
+    </div>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // 自動對應 section-X 到 img-X
+        const sections = document.querySelectorAll('.story-section');
+        
+        sections.forEach((section, index) => {
+            // 找出對應的圖片 class (img-1, img-2...)
+            const imgClass = `.img-${index + 1}`;
+            const img = document.querySelector(imgClass);
+            
+            if (!img) return;
+
+            // 設定動畫
+            gsap.timeline({
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top center",    // 當區塊頂部到達視窗中間
+                    end: "bottom center",   // 當區塊底部離開視窗中間
+                    toggleActions: "play reverse play reverse",
+                    scrub: 1, // 跟隨滾輪延遲效果
+                }
+            })
+            .fromTo(img, 
+                { opacity: 0, x: 100, y: 100, rotate: 3, scale: 0.8 }, // 進場前：右下、透明、微轉、縮小
+                { opacity: 1, x: 0, y: 0, rotate: 0, scale: 1, duration: 1, ease: "power2.out" } // 進場後：歸位、清晰
+            );
+        });
+    </script>
+</body>
+</html>

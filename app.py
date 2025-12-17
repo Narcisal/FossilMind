@@ -33,7 +33,7 @@ def save_db(data):
 
 @app.route("/")
 def index():
-    return render_template("chat.html") # 直接導向聊天室
+    return render_template("index.html")
 
 @app.route("/chat")
 def chat_page():
