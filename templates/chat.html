@@ -3,433 +3,362 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FossilMind Chat</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <title>FossilMind - 鑑定實驗室</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        /* --- 全局設定 --- */
-        body {
-            background-color: #131314;
-            color: #E3E3E3;
-            font-family: 'Roboto', 'Noto Sans TC', sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden; /* 防止整個頁面捲動 */
+        :root {
+            --bg-color: #f4f6f8;
+            --chat-bg: #ffffff;
+            --primary-color: #4a6fa5;
+            --user-msg-bg: #e3effd;
+            --bot-msg-bg: #f0f2f5;
+            --text-dark: #2c3e50;
+            --text-light: #6c757d;
+            --shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        /* --- 左側邊欄 (Sidebar) --- */
-        .sidebar {
-            width: 260px;
-            background-color: #1e1f20; /* 比背景稍亮 */
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--text-dark);
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #444;
-            transition: transform 0.3s;
         }
 
-        .sidebar-header {
-            padding: 20px;
+        /* 導航列 */
+        header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
         }
 
-        /* 新增聊天按鈕 */
-        .new-chat-btn {
-            background-color: #2b2c2e;
-            color: #aaa;
-            border: 1px solid #444;
-            padding: 10px 15px;
-            border-radius: 20px;
-            width: 100%;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.2s;
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text-light);
             font-size: 0.9rem;
+            transition: 0.3s;
         }
-        .new-chat-btn:hover {
-            background-color: #333;
-            color: #fff;
-            border-color: #666;
-        }
-
-        /* 聊天列表區域 */
-        .chat-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-        }
-
-        .chat-item {
-            padding: 10px 15px;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #ccc;
-            font-size: 0.9rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .chat-item:hover {
-            background-color: #2a2b2d;
-            color: #fff;
-        }
-        .chat-item.active {
-            background-color: #004a77; /* 選中時的藍色 */
-            color: #fff;
-        }
-        
-        /* 刪除按鈕 (隱藏式) */
-        .delete-btn {
-            opacity: 0;
-            background: none;
-            border: none;
-            color: #aaa;
-            cursor: pointer;
-            padding: 2px;
-        }
-        .chat-item:hover .delete-btn {
-            opacity: 1; /* 滑鼠移上去才顯示 */
-        }
-        .delete-btn:hover { color: #ff6b6b; }
-
-
-        /* --- 右側主畫面 (Main) --- */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* 頂部導覽列 */
-        header {
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 10;
-        }
-        .logo {
-            font-size: 1.2rem;
-            font-weight: bold;
-            background: linear-gradient(90deg, #4285F4, #9B72CB);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+        .back-btn:hover { color: var(--primary-color); }
 
         /* 聊天區域 */
-        #chat-container {
+        .chat-container {
             flex: 1;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 30px 20px;
             overflow-y: auto;
-            padding: 20px 15%; 
             display: flex;
             flex-direction: column;
             gap: 20px;
             scroll-behavior: smooth;
         }
 
-        /* --- 訊息樣式 (保持原本設計) --- */
         .message {
-            max-width: 95%;
-            padding: 10px 15px;
-            border-radius: 12px;
-            line-height: 1.6;
-            font-size: 1rem;
             display: flex;
             align-items: flex-start;
-        }
-        .user-message {
-            align-self: flex-start;
-            background-color: #2b3846;
-            color: #e8eaed;
-            margin-bottom: 5px;
-            border: 1px solid #3c4043;
-        }
-        .ai-message {
-            align-self: flex-start;
-            background-color: transparent;
-            color: #E3E3E3;
-            width: 100%;
-        }
-        .ai-avatar {
-            font-size: 1.8rem;
-            margin-right: 15px;
-            min-width: 40px;
-            text-align: center;
-        }
-        .markdown-content { flex: 1; overflow-wrap: break-word; }
-
-        /* 表格與圖片樣式 */
-        .ai-message table {
-            border-collapse: collapse; width: 100%; margin: 15px 0;
-            background-color: #1e1f20; border-radius: 8px; overflow: hidden;
-        }
-        .ai-message th, .ai-message td {
-            border: 1px solid #3c4043; padding: 10px 14px; text-align: left;
-        }
-        .ai-message th { background-color: #2c2c2c; color: #a8c7fa; font-weight: 600; }
-        .ai-message strong { color: #fff; font-weight: 700; }
-        .ai-message img {
-            max-width: 100%; border-radius: 8px; margin-top: 15px;
-            border: 1px solid #444; background-color: white; padding: 5px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
         }
 
-        /* 底部輸入區 */
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+        }
+        .user .avatar { background-color: var(--primary-color); color: white; }
+        .ai .avatar { background-color: #2c3e50; color: white; }
+
+        .bubble {
+            padding: 15px 20px;
+            border-radius: 15px;
+            line-height: 1.6;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        
+        .user .bubble {
+            background-color: var(--user-msg-bg);
+            color: var(--text-dark);
+            border-top-right-radius: 2px;
+        }
+
+        .ai .bubble {
+            background-color: var(--chat-bg);
+            border: 1px solid #e0e0e0;
+            border-top-left-radius: 2px;
+        }
+
+        /* Agent 狀態條 */
+        .agent-status {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #eef4fc;
+            padding: 4px 10px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+        
+        /* 鑑定結果卡片 */
+        .fossil-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .fossil-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .fossil-body {
+            padding: 15px;
+            font-size: 0.95rem;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        .info-label {
+            width: 80px;
+            color: #888;
+            font-weight: 500;
+        }
+        .confidence-tag {
+            background: #d4edda;
+            color: #155724;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        /* 輸入區域 */
         .input-area {
-            background-color: #131314;
+            background: white;
             padding: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.05);
             display: flex;
             justify-content: center;
+            align-items: center;
         }
-        .input-container {
-            background-color: #303134;
-            width: 100%; max-width: 800px;
-            border-radius: 30px; display: flex; align-items: center;
-            padding: 8px 20px; border: 1px solid #444; transition: all 0.3s;
+
+        .input-wrapper {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 50px;
+            border: 1px solid #e0e0e0;
+            transition: 0.3s;
         }
-        .input-container:focus-within { border-color: #7cacf8; box-shadow: 0 0 8px rgba(124, 172, 248, 0.2); }
-        textarea {
-            flex: 1; background: transparent; border: none; color: white;
-            font-size: 1rem; padding: 8px; resize: none; height: 24px;
-            max-height: 150px; outline: none; font-family: inherit;
-        }
-        #send-btn {
-            background: transparent; border: none; color: #aaa; cursor: pointer;
-            padding: 8px; display: flex; align-items: center; justify-content: center;
-        }
-        #send-btn:hover { color: #fff; }
         
-        .typing-indicator span {
-            display: inline-block; width: 6px; height: 6px; background-color: #aaa;
-            border-radius: 50%; animation: typing 1s infinite; margin: 0 2px;
+        .input-wrapper:focus-within {
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(74, 111, 165, 0.1);
         }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+
+        input[type="text"] {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px;
+            font-size: 1rem;
+            outline: none;
+            color: var(--text-dark);
         }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        .icon-btn:hover { background: #e0e0e0; color: #333; }
+        
+        .send-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .send-btn:hover { background-color: #3b5d8f; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #file-upload { display: none; }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <button class="new-chat-btn" onclick="createNewChat()">
-                <span>+</span> 新增對話
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-bone" style="color: var(--primary-color);"></i>
+            FossilMind <span style="font-size: 0.8rem; color: #888; font-weight: 400; margin-left: 5px;">| AI Agent Laboratory</span>
+        </div>
+        <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
+    </header>
+
+    <div class="chat-container" id="chat-box">
+        <div class="message ai">
+            <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+            <div class="bubble">
+                嗨！我是 FossilMind。🦕<br>
+                請上傳化石照片，或是描述它的特徵（例如發現地點、紋路、顏色），我會啟動 Agent 為你進行鑑定。
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-wrapper">
+            <label for="file-upload" class="icon-btn" title="上傳照片">
+                <i class="fa-regular fa-image"></i>
+            </label>
+            <input type="file" id="file-upload" accept="image/*">
+            
+            <input type="text" id="user-input" placeholder="描述你的發現...">
+            
+            <button class="icon-btn send-btn" onclick="sendMessage()">
+                <i class="fa-solid fa-paper-plane"></i>
             </button>
         </div>
-        <div class="chat-list" id="chat-list">
-            </div>
-    </aside>
-
-    <main class="main-content">
-        <header>
-            <div class="logo">✨ FossilMind</div>
-            <a href="/" class="home-btn" style="display:none;">回首頁</a> </header>
-
-        <div id="chat-container">
-            <div class="message ai-message" id="welcome-msg">
-                <div class="ai-avatar">🦖</div>
-                <div class="markdown-content">
-                    你好！點擊左上角「新增對話」，開始鑑定你的化石吧！
-                </div>
-            </div>
-        </div>
-
-        <div class="input-area">
-            <div class="input-container">
-                <textarea id="user-input" placeholder="輸入化石特徵..." rows="1" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-                <button id="send-btn" onclick="sendMessage()">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-                </button>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <script>
-        marked.setOptions({ breaks: true, gfm: true });
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
 
-        const chatBox = document.getElementById('chat-container');
-        const inputField = document.getElementById('user-input');
-        const chatListEl = document.getElementById('chat-list');
-        
-        let currentChatId = null; // 記錄目前正在哪一個聊天室
+        function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
 
-        // 初始化
-        document.addEventListener("DOMContentLoaded", async function() {
-            await loadChatList();
-            
-            // 如果清單裡有聊天紀錄，自動載入第一個；沒有的話，建立一個新的
-            const chats = await fetch('/api/chats').then(r => r.json());
-            if (chats.length > 0) {
-                switchChat(chats[0].id);
-            } else {
-                createNewChat();
-            }
-        });
+            appendMessage('user', text);
+            userInput.value = '';
 
-        // --- 1. 載入側邊欄列表 ---
-        async function loadChatList() {
-            const response = await fetch('/api/chats');
-            const chats = await response.json();
-            
-            chatListEl.innerHTML = ''; // 清空
-            chats.forEach(chat => {
-                const div = document.createElement('div');
-                div.className = `chat-item ${chat.id === currentChatId ? 'active' : ''}`;
-                div.innerHTML = `
-                    <span onclick="switchChat('${chat.id}')" style="flex:1; overflow:hidden; text-overflow:ellipsis;">${chat.title}</span>
-                    <button class="delete-btn" onclick="deleteChat('${chat.id}', event)">🗑️</button>
-                `;
-                chatListEl.appendChild(div);
-            });
-        }
+            const loadingId = appendLoadingState("分析特徵中 (Analyzing Features)...");
 
-        // --- 2. 建立新對話 ---
-        async function createNewChat() {
-            const response = await fetch('/api/chats', { method: 'POST' });
-            const data = await response.json();
-            await loadChatList();
-            switchChat(data.id); // 切換到新的
-        }
-
-        // --- 3. 切換對話 (載入舊訊息) ---
-        async function switchChat(chatId) {
-            currentChatId = chatId;
-            
-            // 更新側邊欄選中狀態
-            document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
-            // 重新載入列表以確保 active 樣式正確 (簡單做法)
-            await loadChatList();
-
-            // 載入訊息
-            const response = await fetch(`/api/chats/${chatId}/messages`);
-            const messages = await response.json();
-            
-            chatBox.innerHTML = ''; // 清空畫面
-
-            if (messages.length === 0) {
-                // 顯示歡迎詞
-                chatBox.innerHTML = `
-                    <div class="message ai-message">
-                        <div class="ai-avatar">🦖</div>
-                        <div class="markdown-content">你好！這是一個新對話。請告訴我你的發現！</div>
-                    </div>`;
-            } else {
-                // 渲染歷史訊息
-                messages.forEach(msg => {
-                    addMessageToUI(msg.role, msg.content, false); // false 代表不要自動捲動，避免閃爍
-                });
-            }
-            scrollToBottom();
-        }
-
-        // --- 4. 刪除對話 ---
-        async function deleteChat(chatId, event) {
-            event.stopPropagation(); // 防止觸發 switchChat
-            if(!confirm("確定要刪除這個紀錄嗎？")) return;
-
-            await fetch(`/api/chats/${chatId}`, { method: 'DELETE' });
-            
-            // 如果刪除的是當前對話，就開一個新的
-            if (chatId === currentChatId) {
-                createNewChat();
-            } else {
-                loadChatList();
-            }
-        }
-
-        // --- 5. 發送訊息 ---
-        inputField.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        async function sendMessage() {
-            const text = inputField.value.trim();
-            if (!text || !currentChatId) return;
-
-            addMessageToUI('user', text, true);
-            inputField.value = '';
-            inputField.style.height = '24px';
-
-            const loadingId = addLoading();
-
-            try {
-                const response = await fetch('/chat_api', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        message: text,
-                        chat_id: currentChatId // 告訴後端這是哪一個對話
-                    })
-                });
-                const data = await response.json();
-
-                removeLoading(loadingId);
+            // 模擬回應，後續需接 API
+            setTimeout(() => {
+                removeMessage(loadingId);
                 
-                let content = data.response;
-                if (data.image_url) {
-                    content += `\n\n<img src="${data.image_url}" alt="Evolution Graph">`;
-                }
+                const aiResponse = `這看起來非常像是<strong>古菱齒象 (Palaeoloxodon)</strong> 的臼齒化石！
                 
-                addMessageToUI('assistant', content, true);
-                
-                // 如果後端回傳了新標題 (例如新對話自動命名)，更新側邊欄
-                if (data.new_title) {
-                    loadChatList();
-                }
+                <div class="fossil-card">
+                    <div class="fossil-header">
+                        <span>鑑定報告</span>
+                        <span class="confidence-tag">信心度: 92%</span>
+                    </div>
+                    <div class="fossil-body">
+                        <div class="info-row"><span class="info-label">學名</span> <span>Palaeoloxodon huaihoensis</span></div>
+                        <div class="info-row"><span class="info-label">年代</span> <span>更新世中期 (約 40-10 萬年前)</span></div>
+                        <div class="info-row"><span class="info-label">食性</span> <span>植食性 (草、樹葉)</span></div>
+                    </div>
+                </div>
+                <br>這類化石常在台灣海峽的「澎湖水道」被打撈上來。你想知道更多關於它的演化關係嗎？`;
 
-            } catch (error) {
-                removeLoading(loadingId);
-                addMessageToUI('assistant', '❌ 連線錯誤，請稍後再試。', true);
-                console.error('Error:', error);
-            }
+                appendMessage('ai', aiResponse, true);
+
+            }, 2000);
         }
 
-        function addMessageToUI(role, content, shouldScroll) {
-            const div = document.createElement('div');
-            if (role === 'user') {
-                div.className = 'message user-message';
-                div.innerText = content;
-            } else {
-                div.className = 'message ai-message';
-                const parsedHTML = marked.parse(content);
-                div.innerHTML = `<div class="ai-avatar">🦖</div><div class="markdown-content">${parsedHTML}</div>`;
-            }
-            chatBox.appendChild(div);
-            if(shouldScroll) scrollToBottom();
+        function appendMessage(role, text, isHtml = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            
+            const avatarIcon = role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
+            
+            let content = isHtml ? text : text.replace(/\n/g, '<br>');
+
+            msgDiv.innerHTML = `
+                <div class="avatar">${avatarIcon}</div>
+                <div class="bubble">${content}</div>
+            `;
+            
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function addLoading() {
+        function appendLoadingState(statusText) {
             const id = 'loading-' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'message ai-message';
-            div.innerHTML = `<div class="ai-avatar">🦖</div><div class="typing-indicator"><span></span><span></span><span></span></div>`;
-            chatBox.appendChild(div);
-            scrollToBottom();
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ai`;
+            msgDiv.id = id;
+            
+            msgDiv.innerHTML = `
+                <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                <div class="bubble">
+                    <div class="agent-status">
+                        <i class="fa-solid fa-gear fa-spin"></i> 狀態: ${statusText}
+                    </div>
+                </div>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
             return id;
         }
 
-        function removeLoading(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
+        function removeMessage(id) {
+            const element = document.getElementById(id);
+            if (element) element.remove();
         }
 
-        function scrollToBottom() {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
     </script>
 </body>
 </html>
