@@ -1,2 +1,243 @@
-<h1>這是還沒做好的首頁</h1>
-<a href="/chat">點我去聊天室</a>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FossilMind - 喚醒沉睡的地球記憶</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&family=Playfair+Display:ital,wght@1,900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            margin: 0;
+            background-color: #0b0b0c;
+            color: #E3E3E3;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- 固定背景層 --- */
+        .fixed-background-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5;
+            background-image: url('/static/hero_bg.jpg'); 
+            background-size: cover; background-position: center;
+            filter: brightness(0.4); transition: filter 0.5s;
+        }
+
+        /* --- Hero Section --- */
+        .hero { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; z-index: 10; }
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 5rem; margin: 0; font-style: italic;
+            background: linear-gradient(135deg, #fff 30%, #a8c7fa 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0; transform: translateY(30px);
+        }
+        .hero h2 { font-size: 1.2rem; font-weight: 300; margin-top: 20px; color: #bbb; opacity: 0; transform: translateY(30px); }
+        
+        .cta-btn {
+            margin-top: 50px; padding: 18px 50px; font-size: 1rem; letter-spacing: 2px; text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px); text-decoration: none; transition: 0.3s;
+            opacity: 0; transform: translateY(30px); display: inline-block;
+        }
+        .cta-btn:hover { background: white; color: black; box-shadow: 0 0 30px rgba(255, 255, 255, 0.2); }
+
+        /* --- 內容區排版 (Grid) --- */
+        .story-section { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 50px 10%; box-sizing: border-box; }
+        
+        .grid-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; width: 100%; max-width: 1400px;
+        }
+        
+        /* 偶數段落反轉 (右文左圖) */
+        .story-section:nth-child(even) .grid-layout { direction: rtl; }
+        .story-section:nth-child(even) .text-box { direction: ltr; }
+
+        /* 圖片容器 */
+        .img-wrapper { 
+            width: 100%;
+            height: 60vh; 
+  
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .story-img { 
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; 
+            
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+            
+            transform: translateY(-5%); 
+        }
+
+        /* 文字容器 (優化毛玻璃) */
+        .text-wrapper { position: relative; }
+        .big-number { position: absolute; top: -80px; left: -40px; font-family: 'Playfair Display', serif; font-size: 10rem; font-weight: 900; color: rgba(255, 255, 255, 0.03); z-index: -1; line-height: 1; }
+        
+        .text-box { 
+            background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 50px; 
+            backdrop-filter: blur(30px) saturate(150%); border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .text-box h3 { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin: 0 0 30px 0; color: #fff; }
+        .text-box p { font-size: 1.1rem; line-height: 1.8; color: #eee; }
+        .text-box ul { padding-left: 20px; color: #ddd; }
+        .text-box li { margin-bottom: 12px; }
+        .text-box strong { color: #a8c7fa; }
+
+        /* --- Footer --- */
+        .footer-section { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 10; }
+        .footer-section h2 { font-family: 'Playfair Display', serif; font-size: 4rem; margin-bottom: 40px; font-style: italic; color: white; }
+
+        @media (max-width: 900px) {
+            .grid-layout { grid-template-columns: 1fr; gap: 40px; }
+            .story-section:nth-child(even) .grid-layout { direction: ltr; }
+            .hero h1 { font-size: 3rem; }
+            .img-wrapper { height: 40vh; }
+            .big-number { font-size: 6rem; top: -40px; left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="fixed-background-layer"></div>
+
+    <section class="hero">
+        <h1>FossilMind</h1>
+        <h2>喚醒沉睡的地球記憶<br>你的專屬 AI 古生物鑑定師</h2>
+        <a href="/chat" class="cta-btn">Start Exploration</a>
+    </section>
+
+    <div class="content-container">
+        
+        <section class="story-section">
+            <div class="grid-layout">
+                <div class="text-wrapper">
+                    <div class="big-number">01</div>
+                    <div class="text-box">
+                        <h3>台灣的足跡</h3>
+                        <p>臺灣島約在 600 萬年前透過蓬萊造山運動浮出海面，成為古代巨獸的避難天堂。</p>
+                        <p>從台南菜寮溪到海邊岩層，FossilMind 將協助你解讀這些來自遠古的訊息。</p>
+                    </div>
+                </div>
+                <div class="img-wrapper">
+                    <img src="/static/image1.png" class="story-img" alt="台灣化石">
+                </div>
+            </div>
+        </section>
+
+        <section class="story-section">
+            <div class="grid-layout">
+                <div class="text-wrapper">
+                    <div class="big-number">02</div>
+                    <div class="text-box">
+                        <h3>AI 深度鑑定</h3>
+                        <ul>
+                            <li><strong>精準辨識：</strong>輸入觀察特徵，立即推測物種學名。</li>
+                            <li><strong>生態還原：</strong>重現當時的氣候、環境與飲食習性。</li>
+                            <li><strong>演化系譜：</strong>獨家生成演化樹，看見生命的連結。</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="img-wrapper">
+                    <img src="/static/image2.png" class="story-img" alt="AI 功能">
+                </div>
+            </div>
+        </section>
+
+        <section class="story-section">
+            <div class="grid-layout">
+                <div class="text-wrapper">
+                    <div class="big-number">03</div>
+                    <div class="text-box">
+                        <h3>三步驟探索</h3>
+                        <ul>
+                            <li><strong>1. 觀察：</strong>仔細查看手中的標本。</li>
+                            <li><strong>2. 描述：</strong>告訴 AI 你看到了什麼紋路與顏色。</li>
+                            <li><strong>3. 解密：</strong>接收你的專屬鑑定報告。</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="img-wrapper">
+                    <img src="/static/image3.png" class="story-img" alt="使用教學">
+                </div>
+            </div>
+        </section>
+
+        <section class="story-section">
+            <div class="grid-layout">
+                <div class="text-wrapper">
+                    <div class="big-number">04</div>
+                    <div class="text-box">
+                        <h3>未來的視野</h3>
+                        <p>我們正在研發影像辨識引擎。不久的將來，透過鏡頭，FossilMind 就能直接看見你手中的歷史。</p>
+                    </div>
+                </div>
+                <div class="img-wrapper">
+                    <img src="/static/image4.png" class="story-img" alt="未來展望">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="footer-section">
+        <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1; background:url('/static/footer_bg.jpg') center/cover; filter: brightness(0.4);"></div>
+        
+        <h2>Ready to Discover?</h2>
+        <a href="/chat" class="cta-btn" style="opacity: 1; transform: translateY(0);">立即開始鑑定</a>
+        <p style="margin-top: 50px; color: #888; font-size: 0.8rem;">© 2025 FossilMind Project.</p>
+    </section>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero 進場
+        gsap.to(".hero h1, .hero h2, .hero .cta-btn", {
+            y: 0, opacity: 1, duration: 1.5, stagger: 0.2, ease: "power3.out"
+        });
+
+        // 圖片視差特效 (修正版)
+        gsap.utils.toArray(".story-img").forEach(img => {
+            gsap.to(img, {
+                y: "10%", // 輕微的上下浮動
+                ease: "none",
+                scrollTrigger: {
+                    trigger: img.parentElement,
+                    start: "top bottom", end: "bottom top", scrub: true
+                }
+            });
+        });
+
+        // 內容淡入
+        gsap.utils.toArray(".story-section").forEach(section => {
+            gsap.from(section.querySelector(".text-wrapper"), {
+                y: 50, opacity: 0, duration: 1,
+                scrollTrigger: { trigger: section, start: "top 70%", toggleActions: "play none none reverse" }
+            });
+            gsap.from(section.querySelector(".img-wrapper"), {
+                y: 50, opacity: 0, duration: 1, delay: 0.2,
+                scrollTrigger: { trigger: section, start: "top 70%", toggleActions: "play none none reverse" }
+            });
+        });
+
+        // 背景模糊
+        gsap.to(".fixed-background-layer", {
+            filter: "brightness(0.2) blur(10px)",
+            scrollTrigger: {
+                trigger: ".content-container", start: "top bottom", end: "bottom top", scrub: true
+            }
+        });
+    </script>
+</body>
+</html>
