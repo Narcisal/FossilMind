@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FossilMind - 全球挖掘計畫</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500&family=Times+New+Roman:ital,wght@1,700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* --- 全域設定 --- */
+        body { margin: 0; display: flex; height: 100vh; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; background-color: #f8f9fa; }
+        
+        /* --- 左側地圖區 --- */
+        #map-container { flex: 2; position: relative; }
+        #map { 
+            height: 100%; 
+            width: 100%; 
+            cursor: crosshair; 
+        }
+        
+        /* 地圖懸浮控制項 */
+        .controls {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: rgba(255, 255, 255, 0.95);
+            padding: 12px 25px; border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: flex; gap: 15px; align-items: center;
+            backdrop-filter: blur(5px); border: 1px solid rgba(0,0,0,0.1);
+        }
+        select { padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; font-size: 1rem; outline: none; cursor: pointer; }
+        .back-btn { text-decoration: none; color: #2c3e50; font-weight: bold; display: flex; align-items: center; gap: 5px; transition: 0.3s; }
+        .back-btn:hover { color: #4a6fa5; }
+
+        /* --- 右側資訊區 --- */
+        #sidebar {
+            flex: 1; background: #ffffff; border-left: 1px solid #e0e0e0;
+            display: flex; flex-direction: column; max-width: 420px; min-width: 350px;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.05); z-index: 1001;
+            position: relative;
+        }
+        
+        .sidebar-header { padding: 25px; background: linear-gradient(135deg, #2c3e50, #4a6fa5); color: white; text-align: center; }
+        .sidebar-content { padding: 25px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
+        
+        /* 狀態容器通用設定 */
+        .status-container { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.5s; }
+        
+        /* 1. 空狀態 (預設) */
+        .empty-state { align-items: center; justify-content: center; text-align: center; color: #888; }
+        .empty-state i { font-size: 4rem; color: #dce4ef; margin-bottom: 20px; }
+        .empty-state p { font-size: 1.1rem; }
+
+        /* 2. Loading 狀態 */
+        .loading-state { display: none; width: 100%; text-align: center; padding-top: 30px; }
+        .spinner-box { margin-bottom: 20px; }
+        .spinner-icon { font-size: 3.5rem; color: #4a6fa5; }
+        .status-text { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; min-height: 1.5em; }
+        .sub-status-text { font-size: 0.95rem; color: #7f8c8d; margin-bottom: 25px; min-height: 1.5em; }
+        .timer-badge {
+            display: inline-block; background: #eef4fc; color: #4a6fa5; padding: 8px 20px;
+            border-radius: 30px; font-family: 'Roboto Mono', monospace;
+            font-size: 1.1rem; font-weight: bold; letter-spacing: 1px; border: 1px solid #d0e1f7;
+        }
+
+        /* 3. 結果顯示區 */
+        .discovery-card { display: none; text-align: left; width: 100%; animation: slideUp 0.6s ease; padding-bottom: 30px; }
+        
+        /* 化石圖片區塊 */
+        .fossil-image-container {
+            width: 100%; height: 200px; background: #eee; border-radius: 12px;
+            margin-bottom: 20px; overflow: hidden; position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .fossil-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .fossil-image-container img:hover { transform: scale(1.05); }
+        .no-image-placeholder { color: #aaa; font-size: 3rem; }
+
+        .fossil-name { font-size: 2rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; line-height: 1.2; }
+        .fossil-latin { font-style: italic; color: #7f8c8d; margin-bottom: 20px; font-family: 'Times New Roman', serif; font-size: 1.1rem; }
+        .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .tag { background: #e3effd; color: #4a6fa5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+        .ai-comment { background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #4a6fa5; line-height: 1.8; color: #444; font-size: 0.95rem; }
+        .ai-comment h3 { margin-top: 0; color: #2c3e50; }
+
+        /* 定位資訊卡片 */
+        .location-card {
+            background: white; border: 1px solid #e0e0e0; border-radius: 12px;
+            padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); display: none;
+        }
+        .loc-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.95rem; }
+        .loc-row:last-child { margin-bottom: 0; }
+        .loc-icon { width: 24px; color: #4a6fa5; text-align: center; margin-right: 10px; }
+        .loc-label { color: #888; margin-right: 5px; font-size: 0.85rem; }
+        .loc-value { font-weight: bold; color: #2c3e50; }
+        .coords-text { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: #666; }
+
+        /* 小知識卡片 */
+        .trivia-card {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            color: #795548; padding: 25px 20px; border-radius: 12px; border: 1px solid #ffeeba;
+            font-size: 1.05rem; margin-top: 50px; position: relative; overflow: hidden; 
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2); min-height: 120px;
+            display: flex; flex-direction: column; justify-content: center; text-align: left;
+        }
+        .trivia-card::before {
+            content: "Did you know?"; position: absolute; top: 50%; right: 15px;
+            transform: translateY(-50%) rotate(-5deg); font-size: 2.8rem; opacity: 0.1;
+            color: #000; font-weight: 900; font-family: 'Times New Roman', serif;
+            font-style: italic; pointer-events: none; white-space: nowrap;
+        }
+        .trivia-title { font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; color: #d35400; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 2; }
+        #trivia-text { position: relative; z-index: 2; line-height: 1.6; font-weight: 500; opacity: 1; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade-out { opacity: 0 !important; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="map-container">
+        <div class="controls">
+            <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
+            <div style="width: 1px; height: 20px; background: #ddd;"></div>
+            <label><i class="fa-solid fa-hourglass-half"></i> 選擇地質代：</label>
+            <select id="era-select">
+                <option value="Paleozoic">古生代 (Paleozoic) - 三葉蟲與巨蟲</option>
+                <option value="Mesozoic" selected>中生代 (Mesozoic) - 恐龍霸主</option>
+                <option value="Cenozoic">新生代 (Cenozoic) - 哺乳類與冰河</option>
+            </select>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2 style="margin:0;"><i class="fa-solid fa-trowel-bricks"></i> 挖掘日誌</h2>
+            <p style="margin:5px 0 0 0; opacity:0.8; font-size:0.9rem;">FossilMind Expedition System</p>
+        </div>
+        
+        <div class="sidebar-content">
+            
+            <div id="location-card" class="location-card">
+                <div class="loc-row">
+                    <div class="loc-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+                    <div class="loc-value coords-text" id="loc-coords">--</div>
+                </div>
+                <div class="loc-row">
+                    <div class="loc-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                    <div><span class="loc-label">地點:</span> <span class="loc-value" id="loc-name">分析中...</span></div>
+                </div>
+                <div class="loc-row">
+                    <div class="loc-icon"><i class="fa-solid fa-mountain-sun"></i></div>
+                    <div><span class="loc-label">地形:</span> <span class="loc-value" id="loc-terrain">地形掃描中...</span></div>
+                </div>
+            </div>
+
+            <div id="empty-state" class="status-container empty-state">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <p>請在地圖上任意點擊<br>開始進行地質探勘</p>
+            </div>
+
+            <div id="loading-state" class="status-container loading-state">
+                <div class="spinner-box">
+                    <i class="fa-solid fa-circle-notch fa-spin spinner-icon"></i>
+                </div>
+                <div id="main-status" class="status-text">初始化中...</div>
+                <div id="sub-status" class="sub-status-text">正在連接 AI 衛星伺服器</div>
+                <div class="timer-badge">
+                    ⏱️ 已耗時：<span id="timer-count">0.0</span> 秒
+                </div>
+
+                <div class="trivia-card">
+                    <div class="trivia-title">🧐 挖掘小知識：</div>
+                    <div id="trivia-text">載入中...</div>
+                </div>
+            </div>
+
+            <div id="result-area" class="discovery-card"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. 初始化地圖
+        const map = L.map('map').setView([20, 0], 2); 
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // UI 變數引用
+        const emptyState = document.getElementById('empty-state');
+        const loadingState = document.getElementById('loading-state');
+        const resultArea = document.getElementById('result-area');
+        const locationCard = document.getElementById('location-card');
+        
+        const locCoords = document.getElementById('loc-coords');
+        const locName = document.getElementById('loc-name');
+        const locTerrain = document.getElementById('loc-terrain');
+        
+        const mainStatus = document.getElementById('main-status');
+        const subStatus = document.getElementById('sub-status');
+        const timerCount = document.getElementById('timer-count');
+        const triviaText = document.getElementById('trivia-text');
+        
+        let currentMarker = null;
+        let triviaInterval = null;
+        let timerInterval = null;
+        let startTime = 0;
+
+        // 🦖 100 條古生物冷知識大數據庫
+        const triviaFacts = [
+            // --- 霸主恐龍篇 ---
+            "暴龍的手臂雖然短，但據說能舉起約 200 公斤的重物，相當於一台鋼琴！🎹",
+            "暴龍的視力其實超級好，雙眼視覺比老鷹還敏銳，別被《侏羅紀公園》騙了！👀",
+            "棘龍是目前已知唯一會游泳的大型肉食恐龍，牠們像鱷魚一樣生活在水裡。🐊",
+            "劍龍的大腦非常小，大概只有一顆核桃那麼大，但牠們重達 5 噸！🧠",
+            "迅猛龍其實只有火雞那麼大，電影裡那種體型其實是「恐爪龍」。🦃",
+            "腕龍的鼻孔並不是長在頭頂上為了潛水用的，這是早期的錯誤推測。👃",
+            "阿根廷龍是史上最重的陸地動物之一，體重可能高達 100 噸，相當於 15 頭非洲象。⚖️",
+            "偷蛋龍其實是被冤枉的！科學家後來發現牠是在保護自己的蛋，而不是偷蛋。🥚",
+            "腫頭龍的頭骨厚度可達 25 公分，相當於騎機車戴了 10 頂安全帽！⛑️",
+            "大部分的獸腳類恐龍（肉食恐龍）其實都有羽毛，只是不一定會飛。🪶",
+            "恐龍其實沒有完全滅絕，現在窗外的麻雀和鴿子，就是倖存的恐龍後代。🐦",
+            "暴龍的一根牙齒包含齒根可長達 30 公分，跟一根香蕉一樣大！🍌",
+            "甲龍的尾巴末端有一個骨質錘，揮動起來的力量可以打斷暴龍的骨頭。🔨",
+            "三角龍的頭盾並不是為了防禦，更多可能是為了求偶展示或調節體溫。💃",
+            "鐮刀龍擁有恐龍界最長的指甲，長達 70 公分，像金鋼狼一樣！💅",
+            "目前發現最早的恐龍出現在三疊紀晚期，距今約 2.3 億年前。⏳",
+            "馬門溪龍的脖子佔了體長的一半，擁有 19 節頸椎，是脖子最長的恐龍之一。🦒",
+            "恐龍也是會得癌症的，科學家在尖角龍的腿骨化石中發現了骨癌的痕跡。🏥",
+            "並不是所有恐龍都生活在熱帶，有些恐龍生活在極地，需要忍受寒冷的冬天。❄️",
+            "副櫛龍頭上的冠飾是中空的，可以像管樂器一樣發出低頻的聲音來溝通。🎺",
+            // --- 台灣與亞洲在地篇 ---
+            "台灣其實曾經有大象！更新世時期，「古菱齒象」曾活躍在台灣海峽的陸橋上。🐘",
+            "台南的「菜寮溪」是台灣化石的寶庫，那裡出土了大量的犀牛、大象與鱷魚化石。💎",
+            "台灣特有的「早坂中國犀」，是 1930 年代在台南左鎮發現的珍貴物種。🦏",
+            "澎湖水道海底每年都打撈出很多化石，被稱為「澎湖水道動物群」。🌊",
+            "著名的「澎湖原人」下顎骨化石，證明了直立人曾經在台灣海峽活動過。💀",
+            "在台灣的山區（如雪山山脈）可以撿到貝類化石，證明台灣是從海底隆起的高山島。🏔️",
+            "中國遼寧省發現的「中華龍鳥」，是第一個被確認擁有羽毛的恐龍化石。🇨🇳",
+            "亞洲發現的「馬門溪龍」是亞洲最大的恐龍之一，名字其實是來自修路工地的意外發現。🚧",
+            "左鎮人化石是台灣目前發現最早的人類化石之一，距今約 2 萬到 3 萬年。🦴",
+            "台灣也有產琥珀！主要分布在東部的海岸山脈，雖然比較年輕，但依然珍貴。🔥",
+            // --- 台灣的冰河巨獸 ---
+            "台灣雖然沒有恐龍，但曾經是「大象的天堂」，發現過多種古象化石。🐘",
+            "台南左鎮發現的「早坂中國犀」是台灣特有亞種，更是台灣化石的國寶級明星。🦏",
+            "台灣曾經有老虎！在左鎮菜寮溪發現過「虎」的臼齒化石，證明老虎曾住在這裡。🐅",
+            "「德氏水牛」的化石在台灣海峽非常常見，證明這裡以前是水草豐美的沼澤。🐃",
+            "成語「四不像」是指「埃氏普賢象」，這種神獸級的動物化石在台灣也找得到。🦌",
+            "台灣海峽在冰河時期其實是一片大草原，動物可以從福建直接走到台灣。🌾",
+            "澎湖海溝是世界級的「化石漁場」，漁民常常撈到象牙和水牛角。⚓",
+            "台灣曾經有「劍齒象」，牠們的牙齒像洗衣板一樣，跟猛獁象長得不一樣。🦷",
+            "在台南發現的「鱷魚化石」，證明以前台灣的氣候比現在更熱帶、更潮濕。🐊",
+            "台灣也有「猛獁象」！雖然數量稀少，但在澎湖水道曾打撈到真猛獁的化石。❄️",
+            "「四不像鹿」在台灣滅絕了，但牠們的化石在西部平原非常豐富。🦌",
+            "台灣發現的「豪豬」化石，說明以前的森林環境跟現在可能很像。🦔",
+            "在台中大甲溪流域，也曾發現過古代犀牛和劍齒象的牙齒化石。🏞️",
+            "台灣的「野豬」化石顯示，牠們已經在這塊土地上生存了數萬年。🐗",
+            "左鎮菜寮溪被譽為「台灣的化石首都」，每逢大雨過後常有化石被沖刷出來。🌧️",
+            "台灣獼猴的祖先化石也有被發現，證明靈長類在台灣居住很久了。🐒",
+            "台灣曾經有「斑點鬣狗」出沒，是當時台灣頂級的掠食者之一。🦴",
+            "在台灣發現的古代「馬」化石，體型比現代馬小很多。🐎",
+            "台灣黑熊的祖先化石非常罕見，但在左鎮曾發現過熊的牙齒。🐻",
+            "古菱齒象是台灣發現體型最大的大象，肩膀高度可達 4 公尺！📏",
+            // --- 台灣的海洋記憶 ---
+            "台灣以前整座島都在海底，所以山上隨便都能撿到貝殼化石，這是「造山運動」的鐵證。🐚",
+            "苗栗的「過港貝化石層」非常壯觀，整面山壁都是百萬年前的扇貝化石。⛰️",
+            "台灣西部有很多「沙錢」（海膽的一種）化石，客家人稱之為「也就是幣」。💰",
+            "嘉義觸口地區有大量的「生痕化石」，紀錄了古代螃蟹和蠕蟲在海底散步的足跡。👣",
+            "屏東恆春發現過巨大的「鯨魚骨骼」化石，證明這裡曾經是深海。🐋",
+            "南投的深山裡竟然有「鯊魚牙齒」化石，因為那裡以前是古特提斯海的一部分。🦈",
+            "台灣有一種化石叫「厚蟹」，在基隆和北海岸的岩石裡常常能看到。🦀",
+            "「有孔蟲」微體化石雖然肉眼看不見，但台灣中油都靠它們來找石油！🛢️",
+            "綠島和蘭嶼是火山島，雖然化石較少，但海底依然有豐富的珊瑚礁化石。🪸",
+            "高雄甲仙是著名的「化石產地」，那裡出產很多保存完整的螺類化石。🐌",
+            "在台灣東北角海岸，可以看到巨大的「巨蠣」（古代牡蠣）化石帶。🦪",
+            "新北樹林地區曾發現過「海龜」的化石，雖然很破碎但非常珍貴。🐢",
+            "台灣的石灰岩地形（如墾丁），其實全部都是由古代珊瑚和貝類屍體堆疊成的。🧱",
+            "「錢幣石」是一種大型的有孔蟲化石，在台灣某些地層非常豐富。🪙",
+            "瑞芳地區有著名的「海膽化石」，有的保存得像藝術品一樣完整。✴️",
+            // --- 台灣的人類與歷史 ---
+            "「澎湖原人」的發現震驚世界，證明 19 萬年前就有直立人在台灣海峽活動。💀",
+            "左鎮人的頭骨化石曾被認為是 3 萬年前，但最新定年修正為 3000 年前。⏳",
+            "以前台灣人不知道那是化石，把大象骨頭磨成粉當作中藥「龍骨」來吃。💊",
+            "台灣原住民傳說中提到的「巨獸」，很可能就是他們祖先看過古代大象的記憶。🗿",
+            "台南左鎮化石園區是全台灣唯一的「化石主題博物館」，非常值得去朝聖！🏛️",
+            // --- 台灣地質奇蹟 ---
+            "台灣島非常年輕，大約只有 600 多萬歲，在地球歷史上像是個嬰兒。👶",
+            "台北盆地以前是一個超大堰塞湖，地底下埋藏了大量的古代植物化石。🌲",
+            "台灣是菲律賓海板塊撞擊歐亞板塊擠出來的，所以地層常常是垂直或翻轉的。💥",
+            "花蓮的太魯閣大理石，其實是 2 億年前的生物遺骸變質而成的！🏛️",
+            "林口台地是紅土層，裡面包覆了很多被古河道沖下來的化石。🧱",
+            "月世界「惡地」地形雖然光禿禿，但泥岩裡面其實藏著很多細小的海洋化石。🌑",
+            "台灣有一種特殊的「琥珀」，產於東部，雖然雜質多但證明台灣曾有茂密森林。🔥",
+            "「野柳女王頭」是沉積岩，裡面其實也含有肉眼難見的微體化石。👸",
+            "早坂一郎教授是台灣古生物學之父，台北帝國大學（台大）最早的化石都是他找的。🎓",
+            "如果你在河邊撿到「像骨頭的石頭」，別急著丟，那可能真的是冰河時期的寶藏！💎",
+            // --- 海洋巨獸篇 ---
+            "滄龍並不是恐龍，牠們是有鱗目的海生爬行動物，跟現代的蜥蜴是親戚。🦎",
+            "蛇頸龍的脖子雖然長，但其實很僵硬，不能像蛇一樣隨意扭動。🐢",
+            "巨齒鯊的咬合力是暴龍的 5 倍以上，可以輕易咬碎鯨魚的骨頭。🦈",
+            "菊石在海洋中生存了超過 3 億年，經歷了三次大滅絕才消失，比恐龍還頑強！🐚",
+            "魚龍的外型跟海豚很像，這是「趨同演化」的經典例子（不同物種演化出相似特徵）。🐬",
+            "鄧氏魚是泥盆紀的海洋霸主，牠沒有牙齒，而是用鋒利的骨板像剪刀一樣切碎獵物。✂️",
+            "三葉蟲是最早發展出複雜複眼的生物之一，牠們的眼睛是用方解石晶體做的！👀",
+            "奇蝦是寒武紀的頂級掠食者，雖然名字有蝦，但跟蝦子一點關係都沒有。🦐",
+            "龍王鯨雖然叫鯨魚，但牠們擁有退化的後腳，甚至還看得到腳趾頭！🦶",
+            "直角石是菊石的遠親，牠們的殼是直的，最長可以長到 9 公尺，像巨大的海底長槍。📏",
+            // --- 冰河與哺乳類篇 ---
+            "猛獁象（長毛象）其實一直活到 4000 年前才完全滅絕，當時埃及金字塔已經蓋好了！🏗️",
+            "劍齒虎的長牙非常脆弱，如果撞到骨頭會斷掉，所以牠們專咬喉嚨軟組織。🦷",
+            "大地懶是一種地面的巨大樹懶，站起來有 6 公尺高，甚至能跟老虎對打。🦥",
+            "雕齒獸就像是開坦克的巨大犰狳，牠們的尾巴像狼牙棒一樣有尖刺。🛡️",
+            "巨犀是史上最大的陸地哺乳動物，比現在的大象還要高兩倍以上。🤯",
+            "始祖馬只有狐狸那麼大，而且腳上有腳趾，不是像現在只有一個蹄。🐎",
+            "袋狼（塔斯馬尼亞虎）雖然叫虎，但其實是有育兒袋的有袋類動物。🦘",
+            "洞熊的化石數量非常多，因為牠們常常在冬眠時死在山洞裡。🐻",
+            "泰坦巨蟒是史上最大的蛇，長達 13 公尺，牠們生活在恐龍滅絕後的溫暖雨林。🐍",
+            "人類的祖先曾與尼安德塔人共存，現代人的基因裡其實有 1%~4% 的尼安德塔人基因。🧬",
+            // --- 昆蟲與植物篇 ---
+            "石炭紀的氧氣濃度高達 35%，所以那時候的昆蟲都超級巨大！🌿",
+            "巨脈蜻蜓的翼展可達 70 公分，跟一隻老鷹一樣大，是史上最大的昆蟲。🦅",
+            "節胸蜈蚣長達 2.5 公尺，如果不小心踩到牠，就像踩到一輛機車！🏍️",
+            "琥珀其實是古代植物的樹脂化石，有時候裡面會包住倒楣的蚊子或羽毛。🦟",
+            "第一朵花直到白堊紀才出現，所以早期的恐龍這輩子都沒看過花。🌺",
+            "木化石（矽化木）硬度非常高，幾乎跟水晶一樣，敲擊會有清脆的聲音。💎",
+            "蕨類植物在恐龍時代是主食，就像我們現在吃白飯一樣普遍。🥗",
+            "有一種古代真菌「原杉藻」，長得像 8 公尺高的巨大蘑菇柱子。🍄",
+            "蟑螂這種生物已經存在了 3 億年，牠們看著恐龍出現又滅絕，依然活得好好的。🪳",
+            "古代的樹木還沒有演化出能被分解的木質素，所以倒下後形成了大量的煤炭層。⛏️",
+            // --- 演化與地質篇 ---
+            "寒武紀大爆發是指在很短的時間內，地球上突然出現了各種複雜的生命形式。💥",
+            "地球曾經是一塊巨大的「盤古大陸」，後來板塊漂移才分裂成現在的樣子。🗺️",
+            "二疊紀大滅絕是史上最慘烈的滅絕事件，超過 95% 的海洋生物都消失了。☠️",
+            "K-Pg 界線是地層中一層富含「銥」元素的黏土層，這是隕石撞擊地球的鐵證。☄️",
+            "化石的形成機率非常低，估計只有不到 1% 的生物能幸運地變成化石。🎰",
+            "我們現在加的石油，其實大部分是來自古代海洋浮游生物和藻類的屍體，不是恐龍油！⛽",
+            "喜馬拉雅山頂上可以找到海洋化石，因為那裡曾經是特提斯海的海底。🏔️",
+            "放射性碳定年法只能測 5 萬年以內的化石，測恐龍要用鈾鉛定年法。☢️",
+            "「活化石」是指像腔棘魚、鱟這種幾億年來外型幾乎沒變的生物。🐟",
+            "達爾文的《物種起源》其實沒有詳細解釋化石紀錄，這曾是他理論的一大罩門。📖",
+            // --- 趣味雜談篇 ---
+            "哥吉拉的叫聲其實是拿塗了松香的手套摩擦大提琴弦做出來的（雖然這不是化石知識）。🎬",
+            "有些恐龍會吞下石頭（胃石）來幫助磨碎胃裡的食物，就像現在的雞一樣。🐔",
+            "目前發現最小的恐龍化石是在琥珀裡，只有蜂鳥那麼大。🍯",
+            "恐龍的蛋有圓的也有長橢圓形的，通常肉食恐龍的蛋比較長。🥚",
+            "「恐龍（Dinosaur）」這個詞的原意是「恐怖的蜥蜴」，雖然牠們不是蜥蜴。🦎",
+            "翼龍其實不是恐龍，牠們是恐龍的近親，屬於「飛行爬行動物」。🦇",
+            "暴龍可能是有嘴唇的！最近研究顯示牠們的牙齒不會隨時露在外面乾燥。👄",
+            "目前還沒有成功從蚊子琥珀裡提取出恐龍 DNA，複製恐龍還只是科幻情節。🧬",
+            "如果你穿越回侏羅紀，你會發現月亮看起來比現在大一點，因為當時月球離地球比較近。🌕",
+            "地球歷史如果濃縮成 24 小時，人類直到最後的 1 分 17 秒才出現。🕰️",
+            "很多怪獸傳說（如獨眼巨人），可能是古人挖到大象頭骨誤認的（鼻孔當成眼睛）。👁️",
+            "恐龍也是會睡覺的，科學家曾發現像鳥一樣縮著頭睡覺的恐龍化石。💤",
+            "糞化石（Coprolite）是科學家的寶貝，可以分析恐龍上一餐吃了什麼！💩",
+            "有一種恐龍叫「奇翼龍」，牠的翅膀像蝙蝠一樣是皮膜狀的，而不是羽毛。🦇",
+            "如果沒有小行星撞擊，恐龍可能還會繼續統治地球，人類就不會演化出來了。🚀",
+            "鱷魚是恐龍現存親緣關係最近的爬行動物親戚之一。🐊",
+            "烏龜的祖先「半甲齒龜」只有肚子有殼，背上還沒有殼。🐢",
+            "藍鯨是地球史上已知最大的動物，比任何恐龍都還要重！🐋",
+            "南極洲曾經是一片綠意盎然的森林，那裡也發現了很多恐龍化石。🌲",
+            "你家後院挖下去，理論上都有機會挖到化石，只是機率問題！⛏️"
+        ];
+
+       function startTimer() {
+            startTime = Date.now();
+            timerCount.innerText = "0.0";
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                timerCount.innerText = elapsed.toFixed(1);
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+        }
+
+        function startTrivia() {
+            updateTriviaContent();
+            if (triviaInterval) clearInterval(triviaInterval);
+            triviaInterval = setInterval(() => {
+                triviaText.classList.add('fade-out');
+                setTimeout(() => {
+                    updateTriviaContent();
+                    triviaText.classList.remove('fade-out');
+                }, 1000); 
+            }, 10000);
+        }
+
+        function updateTriviaContent() {
+            const randomFact = triviaFacts[Math.floor(Math.random() * triviaFacts.length)];
+            triviaText.innerHTML = randomFact;
+        }
+
+        function stopTrivia() {
+            clearInterval(triviaInterval);
+            triviaText.classList.remove('fade-out');
+        }
+
+        // --- 點擊挖掘主邏輯 (修正後) ---
+        map.on('click', async function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            const era = document.getElementById('era-select').value;
+
+            // 1. UI 重置
+            if (currentMarker) map.removeLayer(currentMarker);
+            currentMarker = L.marker([lat, lng]).addTo(map);
+            
+            emptyState.style.display = 'none';
+            resultArea.style.display = 'none';
+            loadingState.style.display = 'block';
+            locationCard.style.display = 'block';
+
+            // 2. 初始狀態顯示
+            locCoords.innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            locName.innerText = "衛星定位中...";
+            locTerrain.innerText = "地形掃描中...";
+            
+            startTimer();
+            startTrivia();
+
+            // 3. (前端) 呼叫 OSM API 查地名
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=3`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.display_name) {
+                        const country = data.address.country || "公海 / 未知領域";
+                        locName.innerText = country;
+                    } else {
+                        locName.innerText = "深海 / 荒野";
+                    }
+                })
+                .catch(() => { locName.innerText = "未知地點 (訊號微弱)"; });
+
+            try {
+                // === 階段一：埋藏 (AI #1) ===
+                mainStatus.innerText = "AI #1: Timekeeper";
+                subStatus.innerText = "正在模擬古代地質與生態...";
+                mainStatus.style.color = "#4a6fa5";
+                
+                const res1 = await fetch('/api/bury', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lng, era })
+                });
+                const data1 = await res1.json();
+                
+                if (!data1.success) throw new Error(data1.error || "Generation failed");
+                
+                // AI 判斷後的更精確地點與地形
+                if (data1.fossil.location) locName.innerText = data1.fossil.location;
+                if (data1.fossil.terrain) locTerrain.innerText = data1.fossil.terrain;
+
+                // === 階段二：鑑定 (AI #2) ===
+                mainStatus.innerText = "AI #2: Paleontologist";
+                subStatus.innerText = "正在撰寫地質探勘報告...";
+                mainStatus.style.color = "#e67e22";
+                
+                const res2 = await fetch('/api/examine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fossil_info: data1.fossil })
+                });
+                const data2 = await res2.json();
+
+                // === 階段三：找圖片 (只有在「挖到東西」時才找) ===
+                let imageUrl = "";
+                if (data1.fossil.found) {
+                    try {
+                        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${data1.fossil.name_latin}&prop=pageimages&format=json&pithumbsize=500&origin=*`);
+                        const wikiData = await wikiRes.json();
+                        const pages = wikiData.query.pages;
+                        const pageId = Object.keys(pages)[0];
+                        if (pages[pageId].thumbnail) {
+                            imageUrl = pages[pageId].thumbnail.source;
+                        }
+                    } catch (e) { console.log("Wiki Image failed", e); }
+                }
+
+                // === 顯示結果 ===
+                stopTimer();
+                stopTrivia();
+                loadingState.style.display = 'none';
+                resultArea.style.display = 'block';
+
+                const fossil = data1.fossil;
+                
+                // 根據 found (是否挖到) 顯示不同 UI
+                if (fossil.found) {
+                    // --- 情況 A: 成功挖到 ---
+                    const imageHtml = imageUrl 
+                        ? `<div class="fossil-image-container"><img src="${imageUrl}" alt="${fossil.name_latin}"></div>`
+                        : `<div class="fossil-image-container"><i class="fa-solid fa-bone no-image-placeholder"></i></div>`;
+
+                    resultArea.innerHTML = `
+                        ${imageHtml}
+                        <div class="tag-row">
+                            <span class="tag" style="background:#27ae60; color:white;">🎉 挖掘成功</span>
+                            <span class="tag" style="background:#f39c12; color:white;">${era}</span>
+                            <span class="tag">${fossil.environment}</span>
+                        </div>
+                        <div class="fossil-name">${fossil.name_zh}</div>
+                        <div class="fossil-latin">${fossil.name_latin}</div>
+                        <div class="ai-comment">${data2.explanation}</div>
+                    `;
+                } else {
+                    // --- 情況 B: 沒挖到 (地質限制) ---
+                    resultArea.innerHTML = `
+                        <div style="text-align:center; padding: 20px 0;">
+                            <i class="fa-solid fa-ban" style="font-size: 4rem; color: #e74c3c; margin-bottom: 20px;"></i>
+                            <h2 style="color: #c0392b; margin: 0;">本次探勘無收穫</h2>
+                            <p style="color: #7f8c8d;">地質年代不符或環境不適合</p>
+                        </div>
+                        <div class="ai-comment" style="border-left-color: #e74c3c;">
+                            ${data2.explanation}
+                        </div>
+                    `;
+                }
+
+            } catch (err) {
+                stopTimer();
+                stopTrivia();
+                console.error(err);
+                alert("挖掘失敗：" + err.message);
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'flex';
+                locationCard.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

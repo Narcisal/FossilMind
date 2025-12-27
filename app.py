@@ -9,8 +9,11 @@ from backend import FossilExpert, API_URL
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
+# 🔑 API KEY
 MY_API_KEY = "3dfdd1df4ee04ed8bfc6ba4a68e3577ce2ce2f29690620ae800886061755cafc"
 expert = FossilExpert(MY_API_KEY, API_URL, "gpt-oss:20b")
+
+# 設定資料庫檔案
 DB_FILE = "chats.json"
 
 def load_db():
@@ -30,19 +33,29 @@ def get_last_ai_context(messages):
     """從歷史訊息中抓取 AI 最後一次的鑑定內容作為 Context"""
     for msg in reversed(messages):
         if msg["role"] == "assistant" and len(msg["content"]) > 20:
-            # 移除 HTML 標籤後作為純文字 context 可能更乾淨，但這裡直接傳入即可
             return msg["content"]
     return ""
 
-# --- 路由 ---
+# ==========================================
+# 🌐 路由 (Routes)
+# ==========================================
 
 @app.route("/")
 def index():
-    return render_template("index.html") 
+    return render_template("index.html")
 
 @app.route("/chat")
 def chat_page():
     return render_template("chat.html")
+
+# 👇 修正重點：地圖路由要放在這裡 (app.run 之前)
+@app.route("/map")
+def map_page():
+    return render_template("map.html")
+
+# ==========================================
+# 💬 API: 聊天記錄管理
+# ==========================================
 
 @app.route("/api/chats", methods=["GET"])
 def get_chats():
@@ -85,8 +98,11 @@ def get_messages(chat_id):
         return jsonify(db[chat_id]["messages"])
     return jsonify([]), 404
 
-# --- 核心邏輯 ---
+# ==========================================
+# 🧠 API: 核心 AI 邏輯
+# ==========================================
 
+# 1. 對話鑑定 API
 @app.route("/chat_api", methods=["POST"])
 def chat_api():
     data = request.json
@@ -105,14 +121,13 @@ def chat_api():
         db[chat_id]["title"] = user_input[:15] + "..."
     db[chat_id]["timestamp"] = time.time()
 
-    # 1. 意圖判斷 (FSM Router)
+    # --- FSM Router ---
     intent = expert.determine_intent(user_input)
     print(f"User Intent: {intent}")
 
     ai_response_text = ""
     image_url = None
 
-    # 2. 狀態分流
     if intent == "IRRELEVANT":
         ai_response_text = "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
 
@@ -149,7 +164,7 @@ def chat_api():
         else:
             ai_response_text = "請先提供化石資訊或照片，我才能為您詳細解釋。"
 
-    # 3. 儲存與回傳
+    # --- 儲存與回傳 ---
     user_msg = {'role': 'user', 'content': user_input}
     
     final_content = ai_response_text
@@ -169,7 +184,47 @@ def chat_api():
         "new_title": db[chat_id]["title"]
     })
 
+# 2. 挖掘 API Part 1: AI #1 埋藏者 (Timekeeper)
+@app.route("/api/bury", methods=["POST"])
+def api_bury():
+    data = request.json
+    lat = data.get("lat")
+    lng = data.get("lng")
+    era = data.get("era")
+    
+    try:
+        # AI #1 思考中...
+        raw_data = expert.bury_fossil(lat, lng, era)
+        clean_json = raw_data.replace("```json", "").replace("```", "").strip()
+        fossil_info = json.loads(clean_json)
+        return jsonify({"success": True, "fossil": fossil_info})
+    except Exception as e:
+        print(f"Bury Error: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+# 3. 挖掘 API Part 2: AI #2 鑑定師 (Paleontologist)
+@app.route("/api/examine", methods=["POST"])
+def api_examine():
+    data = request.json
+    fossil_info = data.get("fossil_info") # 接收 Part 1 的結果
+    
+    try:
+        # AI #2 思考中...
+        explanation = expert.dig_fossil(str(fossil_info))
+        
+        # 👇 新增這行：暴力清除 Markdown 標記
+        clean_explanation = explanation.replace("```html", "").replace("```", "").strip()
+        
+        return jsonify({"success": True, "explanation": clean_explanation})
+    except Exception as e:
+        return jsonify({"success": False, "explanation": "通訊錯誤，無法生成詳細報告。"})
+
+# ==========================================
+# 🚀 啟動伺服器 (這個必須永遠在最後面)
+# ==========================================
 if __name__ == "__main__":
     if not os.path.exists('static'):
         os.makedirs('static')
+    print("🦕 FossilMind 伺服器啟動中...")
+    print("🌍 地圖功能已就緒: http://127.0.0.1:5000/map")
     app.run(debug=True, port=5000)

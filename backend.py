@@ -137,6 +137,80 @@ class FossilExpert:
         clean_code = result.replace("```dot", "").replace("```", "").replace("json", "").strip()
         return clean_code
 
+# ... (原本的程式碼) ...
+
+    def bury_fossil(self, lat, lng, era):
+        """
+        AI #1: 埋藏者 (The Timekeeper) - 嚴格地質版
+        如果是後來才形成的島嶼 (如台灣)，在古老年代必須判定為「不存在」。
+        """
+        prompt = f"""
+        你是時間守護者。使用者在座標 ({lat}, {lng}) 進行挖掘。
+        目標年代：{era}。
+        
+        【任務：嚴格地質檢核】
+        請判斷「現代的這個地點」在「{era}」是否存在？
+        
+        ⚠️ **最重要的判斷標準 (Strict Rules)**：
+        1. **新生地質區**：如果該地點是現代才形成的島嶼或陸地 (例如：**台灣**、夏威夷、冰島、日本列島大部分)，而在目標年代 (如中生代、古生代) 尚未透過造山運動形成，**請直接判定為 found: false**。
+        2. **理由 (Reason)**：必須明確寫出「當時台灣島尚未形成」或「該板塊還在深海/地函中」。
+        3. **例外**：只有在點擊「大陸板塊核心」(如歐亞大陸內部、美洲大陸) 且當時真的是海洋時，才允許發現海洋生物。
+        
+        【決策邏輯】
+        * 情況 A (地質不存在)：點擊台灣/夏威夷 + 中生代/古生代 -> **found: false** (理由：島嶼未誕生)。
+        * 情況 B (環境不對)：點擊內陸沙漠 + 尋找水生生物 -> **found: false**。
+        * 情況 C (成功)：點擊古大陸板塊 -> **found: true**。
+        
+        【⚠️ 強制語言規範】
+        1. 必須使用 **繁體中文 (Taiwan)**。
+        2. 絕對禁止簡體字。
+        
+        【輸出格式 (JSON)】
+        {{
+            "found": boolean,
+            "reason": "若 false，請解釋地質原因 (例如: 當時台灣島尚未因板塊擠壓而浮出水面，該處為深海)",
+            "location": "地點名稱 (如: 遠古太平洋深處)",
+            "terrain": "地形描述 (如: 深海 / 地殼下)",
+            "name_zh": "物種中文名 (若 false 留空)",
+            "name_latin": "學名 (若 false 留空)",
+            "type": "分類 (若 false 留空)",
+            "environment": "古代環境",
+            "description": "簡述"
+        }}
+        """
+        return self._call_llm(prompt, temperature=0.7)
+
+    def dig_fossil(self, fossil_data):
+        """
+        AI #2: 鑑定師 (The Paleontologist)
+        根據挖掘結果進行講解 (成功恭喜，失敗則科普)。
+        """
+        prompt = f"""
+        你是一位古生物學家。這是剛出土的探勘結果：
+        
+        {fossil_data}
+        
+        【任務】
+        請判斷 JSON 資料中的 "found" 欄位：
+        
+        👉 **情況 A：如果有挖到 (found: true)**
+        請用興奮、專業的口吻撰寫鑑定報告：
+        1. 恭喜發現了什麼物種。
+        2. 介紹該物種的習性。
+        3. 描述當時這個地點的環境樣貌。
+        
+        👉 **情況 B：如果沒挖到 (found: false)**
+        請用遺憾但富含教育意義的口吻解釋：
+        1. 告訴使用者這裡為什麼沒有化石 (引用 reason 欄位)。
+        2. 科普一下當時這個地點的地質狀態 (例如：當時台灣還在海底，或者是火山還沒噴發)。
+        3. 鼓勵使用者去別的地方試試看。
+        
+        【⚠️ 強制語言規範】
+        1. **全程使用繁體中文 (Traditional Chinese, Taiwan)**。
+        2. 輸出格式為 HTML (不包含 ```html 標記)。
+        """
+        return self._call_llm(prompt)
+    
 # 測試用
 if __name__ == "__main__":
     expert = FossilExpert()
