@@ -15,12 +15,7 @@
         
         /* --- 左側地圖區 --- */
         #map-container { flex: 2; position: relative; }
-        #map { 
-            height: 100%; 
-            width: 100%; 
-            /* 設定游標為精準的十字準心 */
-            cursor: crosshair; 
-        }
+        #map { height: 100%; width: 100%; cursor: crosshair; }
         
         /* 地圖懸浮控制項 */
         .controls {
@@ -46,99 +41,58 @@
         .sidebar-header { padding: 25px; background: linear-gradient(135deg, #2c3e50, #4a6fa5); color: white; text-align: center; }
         .sidebar-content { padding: 25px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
         
-        /* 狀態容器通用設定 */
+        /* 狀態容器 */
         .status-container { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.5s; }
-        
-        /* 1. 空狀態 (預設) */
         .empty-state { align-items: center; justify-content: center; text-align: center; color: #888; }
         .empty-state i { font-size: 4rem; color: #dce4ef; margin-bottom: 20px; }
-        .empty-state p { font-size: 1.1rem; }
-
-        /* 2. Loading 狀態 (計時器版) */
-        .loading-state { display: none; width: 100%; text-align: center; padding-top: 30px; }
         
-        /* 旋轉圈圈 */
-        .spinner-box { margin-bottom: 20px; }
-        .spinner-icon { font-size: 3.5rem; color: #4a6fa5; }
-        
-        /* 狀態文字 */
-        .status-text { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; min-height: 1.5em; }
-        .sub-status-text { font-size: 0.95rem; color: #7f8c8d; margin-bottom: 25px; min-height: 1.5em; }
-        
-        /* 計時器 */
-        .timer-badge {
-            display: inline-block;
-            background: #eef4fc;
-            color: #4a6fa5;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 1.1rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-            border: 1px solid #d0e1f7;
+        /* --- 新增：定位資訊卡片 (Location Card) --- */
+        .location-card {
+            background: white; border: 1px solid #e0e0e0; border-radius: 12px;
+            padding: 15px; margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            display: none; /* 預設隱藏 */
         }
+        .loc-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.95rem; }
+        .loc-row:last-child { margin-bottom: 0; }
+        .loc-icon { width: 24px; color: #4a6fa5; text-align: center; margin-right: 10px; }
+        .loc-label { color: #888; margin-right: 5px; font-size: 0.85rem; }
+        .loc-value { font-weight: bold; color: #2c3e50; }
+        .coords-text { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: #666; }
 
-        /* --- 小知識卡片 --- */
+        /* Loading 狀態 */
+        .loading-state { display: none; width: 100%; text-align: center; padding-top: 10px; }
+        .spinner-box { margin-bottom: 20px; }
+        .spinner-icon { font-size: 3rem; color: #4a6fa5; }
+        .status-text { font-size: 1.1rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .sub-status-text { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 20px; }
+        .timer-badge { background: #eef4fc; color: #4a6fa5; padding: 6px 15px; border-radius: 20px; font-family: 'Roboto Mono', monospace; font-weight: bold; font-size: 0.9rem; }
+
+        /* 小知識卡片 */
         .trivia-card {
             background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-            color: #795548; /* 深咖啡色文字 */
-            padding: 25px 20px;
-            border-radius: 12px;
-            border: 1px solid #ffeeba;
-            font-size: 1.05rem;
-            margin-top: 50px; /* 拉開與上方的距離 */
-            position: relative;
-            overflow: hidden; 
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            text-align: left;
+            color: #795548; padding: 20px; border-radius: 12px; border: 1px solid #ffeeba;
+            font-size: 1rem; margin-top: 30px; position: relative; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2); min-height: 100px;
+            display: flex; flex-direction: column; justify-content: center;
         }
-
-        /* 浮水印 */
         .trivia-card::before {
-            content: "Did you know?";
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%) rotate(-5deg);
-            font-size: 2.8rem;
-            line-height: 1;
-            opacity: 0.1;
-            color: #000;
-            font-weight: 900;
-            font-family: 'Times New Roman', serif;
-            font-style: italic;
-            pointer-events: none;
-            white-space: nowrap;
+            content: "Did you know?"; position: absolute; top: 50%; right: 15px;
+            transform: translateY(-50%) rotate(-5deg); font-size: 2.5rem; opacity: 0.1;
+            color: #000; font-weight: 900; font-family: 'Times New Roman', serif;
+            font-style: italic; pointer-events: none; white-space: nowrap;
         }
-
-        .trivia-title {
-            font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; 
-            color: #d35400; text-transform: uppercase; letter-spacing: 1px;
-            position: relative; z-index: 2;
-        }
-
-        #trivia-text {
-            position: relative; z-index: 2; line-height: 1.6; font-weight: 500;
-            opacity: 1;
-            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
+        .trivia-title { font-weight: bold; margin-bottom: 8px; font-size: 0.85rem; color: #d35400; text-transform: uppercase; z-index: 2; }
+        #trivia-text { position: relative; z-index: 2; line-height: 1.5; font-weight: 500; opacity: 1; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1); }
         .fade-out { opacity: 0 !important; }
 
-        /* 3. 結果顯示區 */
+        /* 結果顯示區 */
         .discovery-card { display: none; text-align: left; width: 100%; animation: slideUp 0.6s ease; padding-bottom: 30px; }
-        .fossil-name { font-size: 2rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; line-height: 1.2; }
+        .fossil-name { font-size: 2rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; }
         .fossil-latin { font-style: italic; color: #7f8c8d; margin-bottom: 20px; font-family: 'Times New Roman', serif; font-size: 1.1rem; }
         .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
         .tag { background: #e3effd; color: #4a6fa5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
-        
         .ai-comment { background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #4a6fa5; line-height: 1.8; color: #444; font-size: 0.95rem; }
-        .ai-comment h3 { margin-top: 0; color: #2c3e50; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -168,20 +122,32 @@
         
         <div class="sidebar-content">
             
+            <div id="location-card" class="location-card">
+                <div class="loc-row">
+                    <div class="loc-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+                    <div class="loc-value coords-text" id="loc-coords">--</div>
+                </div>
+                <div class="loc-row">
+                    <div class="loc-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                    <div><span class="loc-label">地點:</span> <span class="loc-value" id="loc-name">分析中...</span></div>
+                </div>
+                <div class="loc-row">
+                    <div class="loc-icon"><i class="fa-solid fa-mountain-sun"></i></div>
+                    <div><span class="loc-label">地形:</span> <span class="loc-value" id="loc-terrain">地形掃描中...</span></div>
+                </div>
+            </div>
+
             <div id="empty-state" class="status-container empty-state">
                 <i class="fa-solid fa-map-location-dot"></i>
                 <p>請在地圖上任意點擊<br>開始進行地質探勘</p>
             </div>
 
             <div id="loading-state" class="status-container loading-state">
-                
                 <div class="spinner-box">
                     <i class="fa-solid fa-circle-notch fa-spin spinner-icon"></i>
                 </div>
-
                 <div id="main-status" class="status-text">初始化中...</div>
                 <div id="sub-status" class="sub-status-text">正在連接 AI 衛星伺服器</div>
-
                 <div class="timer-badge">
                     ⏱️ 已耗時：<span id="timer-count">0.0</span> 秒
                 </div>
@@ -193,13 +159,11 @@
             </div>
 
             <div id="result-area" class="discovery-card"></div>
-
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. 初始化地圖
         const map = L.map('map').setView([20, 0], 2); 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
@@ -210,11 +174,15 @@
         const emptyState = document.getElementById('empty-state');
         const loadingState = document.getElementById('loading-state');
         const resultArea = document.getElementById('result-area');
+        const locationCard = document.getElementById('location-card');
+        
+        const locCoords = document.getElementById('loc-coords');
+        const locName = document.getElementById('loc-name');
+        const locTerrain = document.getElementById('loc-terrain');
         
         const mainStatus = document.getElementById('main-status');
         const subStatus = document.getElementById('sub-status');
         const timerCount = document.getElementById('timer-count');
-        
         const triviaText = document.getElementById('trivia-text');
         
         let currentMarker = null;
@@ -377,14 +345,13 @@
             "你家後院挖下去，理論上都有機會挖到化石，只是機率問題！⛏️"
         ];
 
-        // --- 計時器邏輯 ---
-        function startTimer() {
+       function startTimer() {
             startTime = Date.now();
             timerCount.innerText = "0.0";
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 const elapsed = (Date.now() - startTime) / 1000;
-                timerCount.innerText = elapsed.toFixed(1); // 顯示到小數點第一位
+                timerCount.innerText = elapsed.toFixed(1);
             }, 100);
         }
 
@@ -392,13 +359,9 @@
             if (timerInterval) clearInterval(timerInterval);
         }
 
-        // --- 小知識輪播邏輯 ---
         function startTrivia() {
             updateTriviaContent();
-            
             if (triviaInterval) clearInterval(triviaInterval);
-            
-            // 每 10 秒換一次
             triviaInterval = setInterval(() => {
                 triviaText.classList.add('fade-out');
                 setTimeout(() => {
@@ -418,30 +381,51 @@
             triviaText.classList.remove('fade-out');
         }
 
-        // --- 點擊挖掘邏輯 ---
+        // --- 點擊挖掘主邏輯 ---
         map.on('click', async function(e) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             const era = document.getElementById('era-select').value;
 
-            // 插旗
+            // 1. UI 重置
             if (currentMarker) map.removeLayer(currentMarker);
             currentMarker = L.marker([lat, lng]).addTo(map);
             
-            // UI 切換
             emptyState.style.display = 'none';
             resultArea.style.display = 'none';
             loadingState.style.display = 'block';
+            locationCard.style.display = 'block'; // 顯示定位卡片
+
+            // 2. 更新座標與初始狀態
+            locCoords.innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            locName.innerText = "衛星定位中...";
+            locTerrain.innerText = "地形掃描中...";
             
-            // 啟動計時器與動畫
             startTimer();
             startTrivia();
+
+            // 3. 立即呼叫 OpenStreetMap API 抓取地點名 (Frontend)
+            // 這樣使用者不用等 AI，馬上就能看到國家/海洋名
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=3`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.display_name) {
+                        // 嘗試抓取國家或海洋名
+                        const country = data.address.country || "公海 / 未知領域";
+                        locName.innerText = country;
+                    } else {
+                        locName.innerText = "深海 / 荒野";
+                    }
+                })
+                .catch(() => {
+                    locName.innerText = "未知地點 (訊號微弱)";
+                });
 
             try {
                 // === 階段一：埋藏 (AI #1) ===
                 mainStatus.innerText = "AI #1: Timekeeper";
                 subStatus.innerText = "正在模擬古代地質與生態...";
-                mainStatus.style.color = "#4a6fa5"; // 藍色主題
+                mainStatus.style.color = "#4a6fa5";
                 
                 const res1 = await fetch('/api/bury', {
                     method: 'POST',
@@ -452,10 +436,14 @@
                 
                 if (!data1.success) throw new Error(data1.error || "Generation failed");
                 
+                // 🔥 AI #1 回傳了詳細地理資訊，立刻更新 UI！
+                if (data1.fossil.location) locName.innerText = data1.fossil.location; // AI 的地點判斷更準 (含古代名)
+                if (data1.fossil.terrain) locTerrain.innerText = data1.fossil.terrain; // 顯示地形！
+
                 // === 階段二：鑑定 (AI #2) ===
                 mainStatus.innerText = "AI #2: Paleontologist";
                 subStatus.innerText = "發現樣本！正在進行詳細鑑定...";
-                mainStatus.style.color = "#e67e22"; // 換個顏色 (橘色) 提示換人了
+                mainStatus.style.color = "#e67e22";
                 
                 const res2 = await fetch('/api/examine', {
                     method: 'POST',
@@ -491,6 +479,7 @@
                 alert("挖掘失敗，請稍後再試。");
                 loadingState.style.display = 'none';
                 emptyState.style.display = 'flex';
+                locationCard.style.display = 'none';
             }
         });
     </script>
