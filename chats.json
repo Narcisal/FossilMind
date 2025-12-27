@@ -84,5 +84,10 @@
                 "content": "<p>這看起來非常像是<strong>五角海膽 (Clypeaster ancylus)</strong> 的化石！</p>\n\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 高</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Clypeaster ancylus</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Clypeasteroida > Clypeasteridae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>Miocene (23–5 Ma)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>滤食性</span></div>\n    </div>\n</div>\n<br>\n<p>此化石屬於五角海膽，呈圓形，表面有五角對稱的凸起，頂部和底部各有一個大孔，外圍布滿微小的疙瘩，符合海膽的典型特徵。</p>"
             }
         ]
+    },
+    "72b52c62-71c0-42d6-a23b-df95bd3f0b40": {
+        "title": "新對話",
+        "timestamp": 1766873084.376131,
+        "messages": []
     }
 }

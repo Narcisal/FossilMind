@@ -225,21 +225,6 @@
             </div>
         </section>
 
-        <section class="story-section">
-            <div class="grid-layout">
-                <div class="text-wrapper">
-                    <div class="big-number">05</div>
-                    <div class="text-box">
-                        <h3>未來的視野</h3>
-                        <p>我們正在研發影像辨識引擎。不久的將來，透過鏡頭，FossilMind 就能直接看見你手中的歷史。</p>
-                    </div>
-                </div>
-                <div class="img-wrapper">
-                    <img src="/static/image4.png" class="story-img" alt="未來展望">
-                </div>
-            </div>
-        </section>
-
     </div>
 
     <section class="footer-section">
@@ -256,7 +241,7 @@
     <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // Hero 進場 (包含新的按鈕組)
+        // Hero 進場
         gsap.to(".hero h1, .hero h2, .btn-group", {
             y: 0, opacity: 1, duration: 1.5, stagger: 0.2, ease: "power3.out"
         });

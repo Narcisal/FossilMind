@@ -7,6 +7,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         :root {
@@ -108,6 +109,7 @@
             line-height: 1.6;
             position: relative;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            word-wrap: break-word; /* 防止長文字破版 */
         }
         
         .user .bubble {
@@ -121,6 +123,9 @@
             border: 1px solid #e0e0e0;
             border-top-left-radius: 2px;
         }
+        
+        /* 讓 Markdown 的圖片自適應 */
+        .bubble img { max-width: 100%; border-radius: 8px; margin-top: 10px; }
 
         /* Agent 狀態條 */
         .agent-status {
@@ -135,44 +140,6 @@
             padding: 4px 10px;
             border-radius: 4px;
             width: fit-content;
-        }
-        
-        /* 鑑定結果卡片 */
-        .fossil-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-top: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .fossil-header {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            font-weight: bold;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-        }
-        .fossil-body {
-            padding: 15px;
-            font-size: 0.95rem;
-        }
-        .info-row {
-            display: flex;
-            margin-bottom: 8px;
-        }
-        .info-label {
-            width: 80px;
-            color: #888;
-            font-weight: 500;
-        }
-        .confidence-tag {
-            background: #d4edda;
-            color: #155724;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.75rem;
         }
 
         /* 輸入區域 */
@@ -207,7 +174,7 @@
             flex: 1;
             border: none;
             background: transparent;
-            padding: 10px;
+            padding: 10px 15px; /* 稍微增加左邊距 */
             font-size: 1rem;
             outline: none;
             color: var(--text-dark);
@@ -234,13 +201,12 @@
             color: white;
         }
         .send-btn:hover { background-color: #3b5d8f; }
+        .send-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        #file-upload { display: none; }
     </style>
 </head>
 <body>
@@ -258,21 +224,16 @@
             <div class="avatar"><i class="fa-solid fa-robot"></i></div>
             <div class="bubble">
                 嗨！我是 FossilMind。🦕<br>
-                請上傳化石照片，或是描述它的特徵（例如發現地點、紋路、顏色），我會啟動 Agent 為你進行鑑定。
+                雖然我現在暫時無法看照片，但我可以回答任何關於化石、地質年代或演化的問題。你可以問我：「暴龍生活在什麼時代？」或「請幫我畫出大象的演化圖」。
             </div>
         </div>
     </div>
 
     <div class="input-area">
         <div class="input-wrapper">
-            <label for="file-upload" class="icon-btn" title="上傳照片">
-                <i class="fa-regular fa-image"></i>
-            </label>
-            <input type="file" id="file-upload" accept="image/*">
+            <input type="text" id="user-input" placeholder="輸入你想問的問題... (例如: 暴龍的牙齒有多大?)">
             
-            <input type="text" id="user-input" placeholder="描述你的發現...">
-            
-            <button class="icon-btn send-btn" onclick="sendMessage()">
+            <button class="icon-btn send-btn" id="send-btn" onclick="sendMessage()">
                 <i class="fa-solid fa-paper-plane"></i>
             </button>
         </div>
@@ -281,38 +242,56 @@
     <script>
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // 簡單產生一個 session ID，讓這次對話可以延續
+        let currentChatId = "chat_" + Date.now();
 
-        function sendMessage() {
+        // 初始化：建立新對話 (通知後端)
+        fetch('/api/chats', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                currentChatId = data.id;
+                console.log("Chat Session Created:", currentChatId);
+            });
+
+        async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;
 
+            // 1. 顯示使用者訊息
             appendMessage('user', text);
             userInput.value = '';
+            sendBtn.disabled = true;
 
-            const loadingId = appendLoadingState("分析特徵中 (Analyzing Features)...");
+            // 2. 顯示 Loading
+            const loadingId = appendLoadingState("FossilExpert 思考中...");
 
-            // 模擬回應，後續需接 API
-            setTimeout(() => {
+            try {
+                // 3. 呼叫後端 API
+                const res = await fetch('/chat_api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: currentChatId, message: text })
+                });
+                const data = await res.json();
+
+                // 4. 移除 Loading，顯示 AI 回應
                 removeMessage(loadingId);
                 
-                const aiResponse = `這看起來非常像是<strong>古菱齒象 (Palaeoloxodon)</strong> 的臼齒化石！
-                
-                <div class="fossil-card">
-                    <div class="fossil-header">
-                        <span>鑑定報告</span>
-                        <span class="confidence-tag">信心度: 92%</span>
-                    </div>
-                    <div class="fossil-body">
-                        <div class="info-row"><span class="info-label">學名</span> <span>Palaeoloxodon huaihoensis</span></div>
-                        <div class="info-row"><span class="info-label">年代</span> <span>更新世中期 (約 40-10 萬年前)</span></div>
-                        <div class="info-row"><span class="info-label">食性</span> <span>植食性 (草、樹葉)</span></div>
-                    </div>
-                </div>
-                <br>這類化石常在台灣海峽的「澎湖水道」被打撈上來。你想知道更多關於它的演化關係嗎？`;
+                if (data.error) throw new Error(data.error);
 
-                appendMessage('ai', aiResponse, true);
+                // 使用 marked 解析 Markdown 格式
+                appendMessage('ai', marked.parse(data.response), true);
 
-            }, 2000);
+            } catch (err) {
+                console.error(err);
+                removeMessage(loadingId);
+                appendMessage('ai', `⚠️ 發生錯誤：無法連接到伺服器。請檢查 app.py 是否正在運行。`, false);
+            } finally {
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
         }
 
         function appendMessage(role, text, isHtml = false) {
@@ -321,6 +300,7 @@
             
             const avatarIcon = role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
             
+            // 如果不是 HTML (即使用者輸入)，將換行轉為 <br>
             let content = isHtml ? text : text.replace(/\n/g, '<br>');
 
             msgDiv.innerHTML = `
@@ -342,7 +322,7 @@
                 <div class="avatar"><i class="fa-solid fa-robot"></i></div>
                 <div class="bubble">
                     <div class="agent-status">
-                        <i class="fa-solid fa-gear fa-spin"></i> 狀態: ${statusText}
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> 狀態: ${statusText}
                     </div>
                 </div>
             `;
