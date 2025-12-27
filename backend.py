@@ -137,6 +137,62 @@ class FossilExpert:
         clean_code = result.replace("```dot", "").replace("```", "").replace("json", "").strip()
         return clean_code
 
+# ... (原本的程式碼) ...
+
+    def bury_fossil(self, lat, lng, era):
+        """
+        AI #1: 埋藏者 (The Timekeeper)
+        根據地點和年代，決定這裡「埋」了什麼化石。
+        """
+        prompt = f"""
+        你是一位掌管地球歷史的「時間守護者」。
+        
+        【情境】
+        有人正在地球的這個座標挖掘：(緯度: {lat}, 經度: {lng})。
+        設定的地質年代是：{era}。
+        
+        【任務】
+        請根據古生物學與板塊漂移知識，判斷在這個年代與地點，**最可能**挖掘到什麼化石？
+        
+        * 如果是海洋（如滄龍、菊石），請說明當時這裡是海洋。
+        * 如果是陸地（如恐龍、哺乳類），請給出當地特有的物種。
+        * 如果該地點在該年代不太可能有化石，請誠實虛構一個合理的「只有岩石」或「微體化石」的結果，或者給出一個非常稀有的發現。
+        
+        【輸出格式】
+        請只回傳一個 JSON 格式（不要 Markdown）：
+        {{
+            "found": true,
+            "name_zh": "物種中文名",
+            "name_latin": "學名",
+            "type": "分類 (如: 獸腳類恐龍)",
+            "environment": "當時環境簡述 (如: 淺海、熱帶雨林)",
+            "description": "關於這個發現的 50 字簡述"
+        }}
+        """
+        return self._call_llm(prompt, temperature=0.8) # 溫度高一點，讓它有創意
+
+    def dig_fossil(self, fossil_data):
+        """
+        AI #2: 挖掘者 (The Paleontologist)
+        根據 AI #1 的發現，撰寫鑑定報告。
+        """
+        prompt = f"""
+        你是一位熱情的考古學家。我們剛挖到了一個東西！
+        
+        【出土資料】
+        {fossil_data}
+        
+        【任務】
+        請用興奮、專業的口吻，向使用者介紹這個發現。
+        請包含以下資訊：
+        1. 恭喜使用者發現了什麼。
+        2. 這個物種在當時是如何生活的？
+        3. 這個地點在幾千萬年前是什麼樣子？
+        
+        請用 HTML 格式輸出，可以加上 emoji。
+        """
+        return self._call_llm(prompt)
+    
 # 測試用
 if __name__ == "__main__":
     expert = FossilExpert()

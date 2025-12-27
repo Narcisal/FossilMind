@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FossilMind - 全球挖掘計畫</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body { margin: 0; display: flex; height: 100vh; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; }
+        
+        /* 左側：地圖區 */
+        #map-container { flex: 2; position: relative; }
+        #map { height: 100%; width: 100%; cursor: crosshair; }
+        
+        /* 懸浮控制項 */
+        .controls {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px; border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex; gap: 15px; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        select { padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; font-size: 1rem; outline: none; }
+        .back-btn { text-decoration: none; color: #333; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+
+        /* 右側：資訊區 */
+        #sidebar {
+            flex: 1; background: #f8f9fa; border-left: 1px solid #ddd;
+            display: flex; flex-direction: column; max-width: 400px;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05); z-index: 1001;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-header { padding: 20px; background: #4a6fa5; color: white; text-align: center; }
+        .sidebar-content { padding: 20px; overflow-y: auto; flex: 1; }
+        
+        .empty-state { text-align: center; color: #888; margin-top: 50px; }
+        .loading { text-align: center; display: none; margin-top: 50px; }
+        
+        /* 化石卡片樣式 */
+        .discovery-card { animation: slideIn 0.5s ease; }
+        .fossil-name { font-size: 1.8rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .fossil-latin { font-style: italic; color: #666; margin-bottom: 15px; }
+        .tag { display: inline-block; background: #e3effd; color: #4a6fa5; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 15px; }
+        .ai-comment { background: white; padding: 15px; border-radius: 10px; border: 1px solid #eee; line-height: 1.6; margin-top: 20px; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="map-container">
+        <div class="controls">
+            <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
+            <span> | </span>
+            <label><i class="fa-solid fa-clock"></i> 選擇年代：</label>
+            <select id="era-select">
+                <option value="Cretaceous">白堊紀 (Cretaceous)</option>
+                <option value="Jurassic">侏羅紀 (Jurassic)</option>
+                <option value="Triassic">三疊紀 (Triassic)</option>
+                <option value="Pleistocene">更新世 (Pleistocene)</option>
+                <option value="Cambrian">寒武紀 (Cambrian)</option>
+            </select>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fa-solid fa-trowel"></i> 挖掘日誌</h2>
+        </div>
+        <div class="sidebar-content">
+            
+            <div id="empty-state" class="empty-state">
+                <i class="fa-solid fa-map-location-dot" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                <p>請在地圖上任意點擊<br>開始挖掘該年代的化石！</p>
+            </div>
+
+            <div id="loading" class="loading">
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: #4a6fa5;"></i>
+                <p>AI #1 正在埋藏化石...<br>AI #2 正在鑑定中...</p>
+            </div>
+
+            <div id="result-area"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. 初始化地圖 (中心點設在台灣附近，但可以看全球)
+        const map = L.map('map').setView([23.5, 121], 3);
+
+        // 2. 加入地圖圖層 (使用 CartoDB 的淺色風格，比較有學術感)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. 處理點擊事件
+        const resultArea = document.getElementById('result-area');
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('empty-state');
+        let currentMarker = null;
+
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            const era = document.getElementById('era-select').value;
+
+            // UI 更新
+            if (currentMarker) map.removeLayer(currentMarker);
+            currentMarker = L.marker([lat, lng]).addTo(map); // 插旗
+            
+            emptyState.style.display = 'none';
+            resultArea.innerHTML = '';
+            loading.style.display = 'block';
+
+            // 呼叫後端 API
+            fetch('/api/dig', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lat: lat, lng: lng, era: era })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                
+                // 渲染結果
+                const fossil = data.fossil;
+                const html = `
+                    <div class="discovery-card">
+                        <div class="tag">${era}</div>
+                        <div class="fossil-name">${fossil.name_zh}</div>
+                        <div class="fossil-latin">${fossil.name_latin}</div>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <strong>分類：</strong> ${fossil.type}<br>
+                            <strong>環境：</strong> ${fossil.environment}
+                        </div>
+
+                        <div class="ai-comment">
+                            ${data.explanation}
+                        </div>
+                    </div>
+                `;
+                resultArea.innerHTML = html;
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                resultArea.innerHTML = '<p style="color:red">挖掘失敗，請重試。</p>';
+            });
+        });
+    </script>
+</body>
+</html>
