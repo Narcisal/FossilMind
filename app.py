@@ -184,35 +184,40 @@ def chat_api():
         "new_title": db[chat_id]["title"]
     })
 
-# 2. 地圖挖掘 API (修正重點：也要放在這裡)
-@app.route("/api/dig", methods=["POST"])
-def api_dig():
+# 2. 挖掘 API Part 1: AI #1 埋藏者 (Timekeeper)
+@app.route("/api/bury", methods=["POST"])
+def api_bury():
     data = request.json
     lat = data.get("lat")
     lng = data.get("lng")
     era = data.get("era")
     
-    # Step 1: AI #1 決定埋什麼
     try:
+        # AI #1 思考中...
         raw_data = expert.bury_fossil(lat, lng, era)
-        # 清理 JSON (有時候 LLM 會包 markdown)
         clean_json = raw_data.replace("```json", "").replace("```", "").strip()
         fossil_info = json.loads(clean_json)
-    except:
-        # 如果 AI 1 失敗，給個預設值
-        fossil_info = {
-            "name_zh": "未知的碎片",
-            "name_latin": "Incertae sedis",
-            "description": "似乎只是一些破碎的骨骼，無法辨識。"
-        }
+        return jsonify({"success": True, "fossil": fossil_info})
+    except Exception as e:
+        print(f"Bury Error: {e}")
+        return jsonify({"success": False, "error": str(e)})
 
-    # Step 2: AI #2 解說
-    explanation = expert.dig_fossil(str(fossil_info))
+# 3. 挖掘 API Part 2: AI #2 鑑定師 (Paleontologist)
+@app.route("/api/examine", methods=["POST"])
+def api_examine():
+    data = request.json
+    fossil_info = data.get("fossil_info") # 接收 Part 1 的結果
     
-    return jsonify({
-        "fossil": fossil_info,
-        "explanation": explanation
-    })
+    try:
+        # AI #2 思考中...
+        explanation = expert.dig_fossil(str(fossil_info))
+        
+        # 👇 新增這行：暴力清除 Markdown 標記
+        clean_explanation = explanation.replace("```html", "").replace("```", "").strip()
+        
+        return jsonify({"success": True, "explanation": clean_explanation})
+    except Exception as e:
+        return jsonify({"success": False, "explanation": "通訊錯誤，無法生成詳細報告。"})
 
 # ==========================================
 # 🚀 啟動伺服器 (這個必須永遠在最後面)
