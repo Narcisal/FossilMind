@@ -15,7 +15,12 @@
         
         /* --- 左側地圖區 --- */
         #map-container { flex: 2; position: relative; }
-        #map { height: 100%; width: 100%; cursor: crosshair; }
+        #map { 
+            height: 100%; 
+            width: 100%; 
+            /* 設定游標為精準的十字準心 */
+            cursor: crosshair; 
+        }
         
         /* 地圖懸浮控制項 */
         .controls {
@@ -41,17 +46,50 @@
         .sidebar-header { padding: 25px; background: linear-gradient(135deg, #2c3e50, #4a6fa5); color: white; text-align: center; }
         .sidebar-content { padding: 25px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
         
-        /* 狀態容器 */
+        /* 狀態容器通用設定 */
         .status-container { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.5s; }
+        
+        /* 1. 空狀態 (預設) */
         .empty-state { align-items: center; justify-content: center; text-align: center; color: #888; }
         .empty-state i { font-size: 4rem; color: #dce4ef; margin-bottom: 20px; }
+        .empty-state p { font-size: 1.1rem; }
+
+        /* 2. Loading 狀態 */
+        .loading-state { display: none; width: 100%; text-align: center; padding-top: 30px; }
+        .spinner-box { margin-bottom: 20px; }
+        .spinner-icon { font-size: 3.5rem; color: #4a6fa5; }
+        .status-text { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; min-height: 1.5em; }
+        .sub-status-text { font-size: 0.95rem; color: #7f8c8d; margin-bottom: 25px; min-height: 1.5em; }
+        .timer-badge {
+            display: inline-block; background: #eef4fc; color: #4a6fa5; padding: 8px 20px;
+            border-radius: 30px; font-family: 'Roboto Mono', monospace;
+            font-size: 1.1rem; font-weight: bold; letter-spacing: 1px; border: 1px solid #d0e1f7;
+        }
+
+        /* 3. 結果顯示區 */
+        .discovery-card { display: none; text-align: left; width: 100%; animation: slideUp 0.6s ease; padding-bottom: 30px; }
         
-        /* --- 新增：定位資訊卡片 (Location Card) --- */
+        /* 新增：化石圖片區塊 */
+        .fossil-image-container {
+            width: 100%; height: 200px; background: #eee; border-radius: 12px;
+            margin-bottom: 20px; overflow: hidden; position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .fossil-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .fossil-image-container img:hover { transform: scale(1.05); }
+        .no-image-placeholder { color: #aaa; font-size: 3rem; }
+
+        .fossil-name { font-size: 2rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; line-height: 1.2; }
+        .fossil-latin { font-style: italic; color: #7f8c8d; margin-bottom: 20px; font-family: 'Times New Roman', serif; font-size: 1.1rem; }
+        .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .tag { background: #e3effd; color: #4a6fa5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+        .ai-comment { background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #4a6fa5; line-height: 1.8; color: #444; font-size: 0.95rem; }
+        .ai-comment h3 { margin-top: 0; color: #2c3e50; }
+
+        /* 定位資訊卡片 */
         .location-card {
             background: white; border: 1px solid #e0e0e0; border-radius: 12px;
-            padding: 15px; margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            display: none; /* 預設隱藏 */
+            padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); display: none;
         }
         .loc-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.95rem; }
         .loc-row:last-child { margin-bottom: 0; }
@@ -60,39 +98,23 @@
         .loc-value { font-weight: bold; color: #2c3e50; }
         .coords-text { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: #666; }
 
-        /* Loading 狀態 */
-        .loading-state { display: none; width: 100%; text-align: center; padding-top: 10px; }
-        .spinner-box { margin-bottom: 20px; }
-        .spinner-icon { font-size: 3rem; color: #4a6fa5; }
-        .status-text { font-size: 1.1rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
-        .sub-status-text { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 20px; }
-        .timer-badge { background: #eef4fc; color: #4a6fa5; padding: 6px 15px; border-radius: 20px; font-family: 'Roboto Mono', monospace; font-weight: bold; font-size: 0.9rem; }
-
         /* 小知識卡片 */
         .trivia-card {
             background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-            color: #795548; padding: 20px; border-radius: 12px; border: 1px solid #ffeeba;
-            font-size: 1rem; margin-top: 30px; position: relative; overflow: hidden;
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2); min-height: 100px;
-            display: flex; flex-direction: column; justify-content: center;
+            color: #795548; padding: 25px 20px; border-radius: 12px; border: 1px solid #ffeeba;
+            font-size: 1.05rem; margin-top: 50px; position: relative; overflow: hidden; 
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2); min-height: 120px;
+            display: flex; flex-direction: column; justify-content: center; text-align: left;
         }
         .trivia-card::before {
             content: "Did you know?"; position: absolute; top: 50%; right: 15px;
-            transform: translateY(-50%) rotate(-5deg); font-size: 2.5rem; opacity: 0.1;
+            transform: translateY(-50%) rotate(-5deg); font-size: 2.8rem; opacity: 0.1;
             color: #000; font-weight: 900; font-family: 'Times New Roman', serif;
             font-style: italic; pointer-events: none; white-space: nowrap;
         }
-        .trivia-title { font-weight: bold; margin-bottom: 8px; font-size: 0.85rem; color: #d35400; text-transform: uppercase; z-index: 2; }
-        #trivia-text { position: relative; z-index: 2; line-height: 1.5; font-weight: 500; opacity: 1; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .trivia-title { font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; color: #d35400; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 2; }
+        #trivia-text { position: relative; z-index: 2; line-height: 1.6; font-weight: 500; opacity: 1; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1); }
         .fade-out { opacity: 0 !important; }
-
-        /* 結果顯示區 */
-        .discovery-card { display: none; text-align: left; width: 100%; animation: slideUp 0.6s ease; padding-bottom: 30px; }
-        .fossil-name { font-size: 2rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; }
-        .fossil-latin { font-style: italic; color: #7f8c8d; margin-bottom: 20px; font-family: 'Times New Roman', serif; font-size: 1.1rem; }
-        .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-        .tag { background: #e3effd; color: #4a6fa5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
-        .ai-comment { background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #4a6fa5; line-height: 1.8; color: #444; font-size: 0.95rem; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -106,9 +128,9 @@
             <div style="width: 1px; height: 20px; background: #ddd;"></div>
             <label><i class="fa-solid fa-hourglass-half"></i> 選擇地質代：</label>
             <select id="era-select">
-                <option value="Paleozoic">古生代 (Paleozoic)</option>
-                <option value="Mesozoic" selected>中生代 (Mesozoic)</option>
-                <option value="Cenozoic">新生代 (Cenozoic)</option>
+                <option value="Paleozoic">古生代 (Paleozoic) - 三葉蟲與巨蟲</option>
+                <option value="Mesozoic" selected>中生代 (Mesozoic) - 恐龍霸主</option>
+                <option value="Cenozoic">新生代 (Cenozoic) - 哺乳類與冰河</option>
             </select>
         </div>
         <div id="map"></div>
@@ -170,7 +192,7 @@
             maxZoom: 19
         }).addTo(map);
 
-        // UI 變數
+        // UI 變數引用
         const emptyState = document.getElementById('empty-state');
         const loadingState = document.getElementById('loading-state');
         const resultArea = document.getElementById('result-area');
@@ -387,16 +409,15 @@
             const lng = e.latlng.lng;
             const era = document.getElementById('era-select').value;
 
-            // 1. UI 重置
+            // UI 重置
             if (currentMarker) map.removeLayer(currentMarker);
             currentMarker = L.marker([lat, lng]).addTo(map);
             
             emptyState.style.display = 'none';
             resultArea.style.display = 'none';
             loadingState.style.display = 'block';
-            locationCard.style.display = 'block'; // 顯示定位卡片
+            locationCard.style.display = 'block';
 
-            // 2. 更新座標與初始狀態
             locCoords.innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             locName.innerText = "衛星定位中...";
             locTerrain.innerText = "地形掃描中...";
@@ -404,22 +425,18 @@
             startTimer();
             startTrivia();
 
-            // 3. 立即呼叫 OpenStreetMap API 抓取地點名 (Frontend)
-            // 這樣使用者不用等 AI，馬上就能看到國家/海洋名
+            // 呼叫 OSM API 查地名
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=3`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.display_name) {
-                        // 嘗試抓取國家或海洋名
                         const country = data.address.country || "公海 / 未知領域";
                         locName.innerText = country;
                     } else {
                         locName.innerText = "深海 / 荒野";
                     }
                 })
-                .catch(() => {
-                    locName.innerText = "未知地點 (訊號微弱)";
-                });
+                .catch(() => { locName.innerText = "未知地點 (訊號微弱)"; });
 
             try {
                 // === 階段一：埋藏 (AI #1) ===
@@ -436,9 +453,8 @@
                 
                 if (!data1.success) throw new Error(data1.error || "Generation failed");
                 
-                // 🔥 AI #1 回傳了詳細地理資訊，立刻更新 UI！
-                if (data1.fossil.location) locName.innerText = data1.fossil.location; // AI 的地點判斷更準 (含古代名)
-                if (data1.fossil.terrain) locTerrain.innerText = data1.fossil.terrain; // 顯示地形！
+                if (data1.fossil.location) locName.innerText = data1.fossil.location;
+                if (data1.fossil.terrain) locTerrain.innerText = data1.fossil.terrain;
 
                 // === 階段二：鑑定 (AI #2) ===
                 mainStatus.innerText = "AI #2: Paleontologist";
@@ -452,6 +468,21 @@
                 });
                 const data2 = await res2.json();
 
+                // === 呼叫 Wikipedia API 找圖片 (新增功能) ===
+                let imageUrl = "";
+                try {
+                    // 使用學名搜尋維基百科
+                    const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${data1.fossil.name_latin}&prop=pageimages&format=json&pithumbsize=500&origin=*`);
+                    const wikiData = await wikiRes.json();
+                    const pages = wikiData.query.pages;
+                    const pageId = Object.keys(pages)[0];
+                    if (pages[pageId].thumbnail) {
+                        imageUrl = pages[pageId].thumbnail.source;
+                    }
+                } catch (e) {
+                    console.log("Wiki Image failed", e);
+                }
+
                 // === 顯示結果 ===
                 stopTimer();
                 stopTrivia();
@@ -459,7 +490,15 @@
                 resultArea.style.display = 'block';
 
                 const fossil = data1.fossil;
+                
+                // 構建圖片 HTML (如果有圖就顯示，沒圖顯示 Placeholder Icon)
+                const imageHtml = imageUrl 
+                    ? `<div class="fossil-image-container"><img src="${imageUrl}" alt="${fossil.name_latin}"></div>`
+                    : `<div class="fossil-image-container"><i class="fa-solid fa-bone no-image-placeholder"></i></div>`;
+
                 resultArea.innerHTML = `
+                    ${imageHtml}
+                    
                     <div class="tag-row">
                         <span class="tag" style="background:#f39c12; color:white;">${era}</span>
                         <span class="tag">${fossil.environment}</span>
