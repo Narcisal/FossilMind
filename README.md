@@ -3,7 +3,7 @@
 
 **FossilMind** 是一個結合大型語言模型 (LLM) 與視覺化工具的古生物 AI Agent。它不僅能透過自然語言鑑定化石，還能自動檢索維基百科圖片，並生成動態演化樹狀圖，旨在協助使用者探索地球的深層記憶。
 
-## 🌟 專案亮點 (Key Features)
+##  Key Features
 
 1.  **🔍 智慧化石鑑定 (Identify & RAG)**
     - Agent 能解析使用者對化石外觀的模糊描述，推測學名與年代。
@@ -15,7 +15,7 @@
         - **Agent 1 (Timekeeper)**：驗證地質年代邏輯（例如：驗證該座標在古生代是否為陸地）。
         - **Agent 2 (Paleontologist)**：根據挖掘結果撰寫科普鑑定報告。
   
-## 📂 檔案結構 (File Structure)
+## File Structure
 
 | 檔案 | 說明 |
 | :--- | :--- |
@@ -31,67 +31,42 @@
 
 ## ⚙️ 安裝與執行指引 (Installation Guide)
 
-> **⚠️ Demo 重要提醒**：本專案依賴 **Graphviz** 系統軟體與 **Ollama** 本地模型。請在執行前確認環境已設置完畢，否則無法繪圖或回應。
-
-### 1. 環境需求 (Prerequisites)
+### 1. Prerequisites
 
 * **Python**: 3.9 或以上版本
-* **Graphviz**: **必備系統軟體** (不僅是 Python 套件，是為了繪製演化圖)
+* **Graphviz**: **必備系統軟體** 
 * **Ollama**: 需安裝並執行本地 LLM Server
 
-### 2. 關鍵依賴安裝 (System Dependencies)
+### 2. System Dependencies
 
-#### A. 安裝 Graphviz (必備)
-若您的電腦未安裝 Graphviz，程式將無法產生演化圖。
+#### A. 安裝 Graphviz
 
-* **🪟 Windows**: [下載安裝檔](https://graphviz.org/download/)，安裝時請務必勾選 **"Add Graphviz to the system PATH for all users"**。
-* **🍎 macOS**: `brew install graphviz`
-* **🐧 Linux**: `sudo apt-get install graphviz`
+* Windows: [下載安裝檔](https://graphviz.org/download/)
+* macOS: `brew install graphviz`
+* Linux: `sudo apt-get install graphviz`
 
 #### B. 準備 Ollama 模型
 請確認 Ollama 服務已啟動，並下載 `llama3` 模型：
+* `ollama pull llama3`
 
-```bash
-ollama pull llama3
+### 3. 專案設置
+* step 1: 下載專案
+`git clone https://github.com/Narcisal/FossilMind.git`
 
-3. 專案設置 (Project Setup)
-Step 1: 下載專案
-Bash
+* Step 2: 安裝 Python 套件
 
-git clone https://github.com/YourUsername/FossilMind.git
-cd FossilMind
-Step 2: 建立虛擬環境 (建議)
-Bash
+`pip install -r requirements.txt`
 
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
-
-# macOS / Linux
-python3 -m venv venv
-source venv/bin/activate
-Step 3: 安裝 Python 套件
-Bash
-
-pip install -r requirements.txt
-4. 啟動系統 (Run Application)
+### 4. 啟動系統 (Run Application)
 執行以下指令啟動 Flask 伺服器：
-
-Bash
-
-python app.py
+`python app.py`
 看到以下訊息代表啟動成功：
-
-Plaintext
-
-🦕 FossilMind 伺服器啟動中... (http://127.0.0.1:5000)
-請開啟瀏覽器訪問：http://127.0.0.1:5000
+`🦕 FossilMind 伺服器啟動中... (http://127.0.0.1:5000)`
+`請開啟瀏覽器訪問：http://127.0.0.1:5000`
 
 
 
-## 🏗️ 系統狀態機圖 (System Logic Diagram)
-
-本系統採用詳細的狀態機流程設計，清楚定義了意圖判斷、工具調用 (Wiki/Graphviz) 與資料庫存取的順序。
+## FSM
 
 ```mermaid
 stateDiagram-v2
