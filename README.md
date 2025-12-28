@@ -41,32 +41,32 @@ an AI agent that help user identify, and learn about simple paleontology.
 
 ## 🏗️ 系統狀態機圖 (System Logic)
 
-本系統採用中心輻射型狀態機設計，根據使用者的意圖 (Intent) 動態分流至不同工具模組。
 
 ```mermaid
 stateDiagram-v2
-    direction LR
-    
-    %% Styles
+    direction TB
+
+    %% 狀態樣式設定
     classDef mainState fill:#f9f,stroke:#333,stroke-width:2px;
     classDef subState fill:#e1f5fe,stroke:#4a6fa5,stroke-width:2px;
-    
-    %% 1. Init
+
+    %% 1. 系統啟動
     [*] --> Init : Start Server
     Init --> Idle : System Ready
 
-    %% 2. Idle State
+    %% 2. 待機狀態
     state "Idle (Wait for Input)" as Idle
     class Idle mainState
 
-    %% 3. Intent Analysis
+    %% 3. 意圖分析 (核心)
     state "Intent Analysis" as Analyzer
     class Analyzer mainState
 
     Idle --> Analyzer : User Message
 
-    %% 4. Branches
+    %% 4. 功能分流 (分支)
     state "IDENTIFY Mode" as Identify {
+        direction TB
         LLM_Identify --> Extract_Keyword
         Extract_Keyword --> Wiki_Search
         Wiki_Search --> Auto_Graph
@@ -74,6 +74,7 @@ stateDiagram-v2
     class Identify subState
 
     state "GRAPH Mode" as Graph {
+        direction TB
         Check_Context --> Generate_DOT
         Generate_DOT --> Render_PNG
     }
@@ -87,14 +88,14 @@ stateDiagram-v2
     state "IRRELEVANT" as Irrelevant
     class Irrelevant subState
 
-    %% 5. Transitions
-    Analyzer --> Identify : intent = "IDENTIFY"
-    Analyzer --> Graph : intent = "GRAPH"
-    Analyzer --> Explain : intent = "EXPLAIN"
-    Analyzer --> Irrelevant : intent = "IRRELEVANT"
+    %% 5. 狀態流轉
+    Analyzer --> Identify : intent="IDENTIFY"
+    Analyzer --> Graph : intent="GRAPH"
+    Analyzer --> Explain : intent="EXPLAIN"
+    Analyzer --> Irrelevant : intent="IRRELEVANT"
 
-    %% 6. Returns
-    Identify --> Idle : Return JSON (Report+Images)
-    Graph --> Idle : Return Image Path
+    %% 6. 回傳結果
+    Identify --> Idle : Return JSON
+    Graph --> Idle : Return Image
     Explain --> Idle : Return Text
     Irrelevant --> Idle : Return Warning
