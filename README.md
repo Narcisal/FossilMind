@@ -14,6 +14,80 @@
     - **Dual-Agent Architecture (Innovation)**：
         - **Agent 1 (Timekeeper)**：驗證地質年代邏輯（例如：驗證該座標在古生代是否為陸地）。
         - **Agent 2 (Paleontologist)**：根據挖掘結果撰寫科普鑑定報告。
+  
+## 📂 檔案結構 (File Structure)
+
+| 檔案 | 說明 |
+| :--- | :--- |
+| `app.py` | **Controller**: 處理 Flask 路由、圖片組裝與回應邏輯 |
+| `backend.py` | **Model**: 封裝 LLM 邏輯、Prompt Engineering 與意圖判斷 |
+| `utils.py` | **Tools**: 負責 Wiki API 搜尋、Regex 關鍵字提取與標籤清理 |
+| `database.py` | **Data**: 負責 JSON 對話紀錄的讀寫 |
+| `config.py` | **Config**: 存放 API Key 與全域設定 |
+| `templates/` | 前端 HTML (Chat UI & Leaflet Map) |
+| `static/` | 存放 CSS、JS 以及**生成的演化圖** |
+
+---
+
+## ⚙️ 安裝與執行指引 (Installation Guide)
+
+> **⚠️ Demo 重要提醒**：本專案依賴 **Graphviz** 系統軟體與 **Ollama** 本地模型。請在執行前確認環境已設置完畢，否則無法繪圖或回應。
+
+### 1. 環境需求 (Prerequisites)
+
+* **Python**: 3.9 或以上版本
+* **Graphviz**: **必備系統軟體** (不僅是 Python 套件，是為了繪製演化圖)
+* **Ollama**: 需安裝並執行本地 LLM Server
+
+### 2. 關鍵依賴安裝 (System Dependencies)
+
+#### A. 安裝 Graphviz (必備)
+若您的電腦未安裝 Graphviz，程式將無法產生演化圖。
+
+* **🪟 Windows**: [下載安裝檔](https://graphviz.org/download/)，安裝時請務必勾選 **"Add Graphviz to the system PATH for all users"**。
+* **🍎 macOS**: `brew install graphviz`
+* **🐧 Linux**: `sudo apt-get install graphviz`
+
+#### B. 準備 Ollama 模型
+請確認 Ollama 服務已啟動，並下載 `llama3` 模型：
+
+```bash
+ollama pull llama3
+
+3. 專案設置 (Project Setup)
+Step 1: 下載專案
+Bash
+
+git clone https://github.com/YourUsername/FossilMind.git
+cd FossilMind
+Step 2: 建立虛擬環境 (建議)
+Bash
+
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
+Step 3: 安裝 Python 套件
+Bash
+
+pip install -r requirements.txt
+4. 啟動系統 (Run Application)
+執行以下指令啟動 Flask 伺服器：
+
+Bash
+
+python app.py
+看到以下訊息代表啟動成功：
+
+Plaintext
+
+🦕 FossilMind 伺服器啟動中... (http://127.0.0.1:5000)
+請開啟瀏覽器訪問：http://127.0.0.1:5000
+
+
 
 ## 🏗️ 系統狀態機圖 (System Logic Diagram)
 
