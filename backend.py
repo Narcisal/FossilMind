@@ -34,7 +34,7 @@ class FossilExpert:
     def determine_intent(self, user_input):
         """
         Step 1: 感知層 (Perception)
-        修正版：加強對「名詞直接輸入」的判定，避免卡在上一輪話題。
+        加強對「名詞直接輸入」的判定，避免卡在上一輪話題。
         """
         prompt = f"""
         你是一個意圖分類器。請分析使用者輸入："{user_input}"
@@ -56,8 +56,7 @@ class FossilExpert:
         
         Answer:
         """
-        # 這裡稍微把 temperature 調低一點 (0.1 -> 0.0)，讓分類更穩定
-        response = self._call_llm(prompt, temperature=0.0) 
+        response = self._call_llm(prompt, temperature=0.0) # 避免胡言亂語
         intent = response.strip().upper()
         
         if "GRAPH" in intent: return "GRAPH"
@@ -67,12 +66,12 @@ class FossilExpert:
 
     def identify_fossil(self, description):
         """
-        Step 2: 驗證與鑑定層 (Verification) - q2
+        Step 2: 驗證與鑑定層 (Verification) 
         """
         prompt = f"""
         你是一位極度嚴謹的古生物學家。使用者輸入了："{description}"
         
-        【🛡️ 安全防護機制 (Safety Guardrail)】
+        【安全防護機制】
         **請先檢查使用者的輸入內容：**
         如果內容與「古生物、化石、岩石、地質、生物遺骸」**完全無關**（例如：電子電路、程式碼、數學作業、政治、娛樂新聞），
         請**立刻停止鑑定**，不要編造任何學名。
@@ -82,7 +81,7 @@ class FossilExpert:
             <div class="bubble" style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">
                 <strong>⚠️ 無法識別</strong><br>
                 FossilMind 專注於古生物與化石鑑定，無法回答關於其他領域（如電子、程式、數學）的問題。<br>
-                請上傳化石照片或描述特徵。
+                請輸入化石特徵描述。
             </div>
         </div>
 
@@ -91,7 +90,8 @@ class FossilExpert:
         只有當確認內容與古生物相關時，才執行以下鑑定任務：
         
         【地質背景過濾機制】
-        * 若使用者提到「台灣」、「台南」、「菜寮溪」、「左鎮」，**絕對禁止** 鑑定為恐龍 (Dinosauria)，應優先考慮更新世哺乳類。
+        * 需貼近真實地裡形成所造成的化石種類。若是在該地並未有發現到該世代的化石，請不要輕易編造學名或不該存在的化石。
+        * e.g. 若使用者提到「台灣」、「台南」、「菜寮溪」、「左鎮」，**絕對應** 優先考慮新生代哺乳類。
         
         【輸出格式】
         請依照以下 HTML 格式輸出 (直接輸出 HTML 代碼，不要用 markdown)：
@@ -118,7 +118,7 @@ class FossilExpert:
     def explain_reasoning(self, context, question):
         """Step 3: 推理層 (Reasoning)"""
         prompt = f"""
-        你是一位古生物科普老師。
+        你是一位極度嚴謹的古生物學家。
         【前情提要】我們剛剛鑑定的化石是：{context}
         【使用者問題】{question}
         請回答問題，若問題與該化石無關，請禮貌引導回化石話題。
@@ -187,33 +187,34 @@ class FossilExpert:
         根據挖掘結果進行講解 (成功恭喜，失敗則科普)。
         """
         prompt = f"""
-        你是一位古生物學家。這是剛出土的探勘結果：
+        你是一位嚴謹的古生物學家。這是剛出土的探勘結果：
         
         {fossil_data}
         
         【任務】
         請判斷 JSON 資料中的 "found" 欄位：
         
-        👉 **情況 A：如果有挖到 (found: true)**
-        請用興奮、專業的口吻撰寫鑑定報告：
-        1. 恭喜發現了什麼物種。
+        **情況 A：如果有挖到 (found: true)**
+        請用專業、略微興喜的口吻撰寫鑑定報告：
+        1. 發現了什麼物種。
         2. 介紹該物種的習性。
         3. 描述當時這個地點的環境樣貌。
+        4. 介紹該物種將來的命運 (例如於何時繁盛、消亡等等)。
         
-        👉 **情況 B：如果沒挖到 (found: false)**
+        **情況 B：如果沒挖到 (found: false)**
         請用遺憾但富含教育意義的口吻解釋：
         1. 告訴使用者這裡為什麼沒有化石 (引用 reason 欄位)。
         2. 科普一下當時這個地點的地質狀態 (例如：當時台灣還在海底，或者是火山還沒噴發)。
         3. 鼓勵使用者去別的地方試試看。
         
-        【⚠️ 強制語言規範】
+        【強制語言規範】
         1. **全程使用繁體中文 (Traditional Chinese, Taiwan)**。
         2. 輸出格式為 HTML (不包含 ```html 標記)。
         """
         return self._call_llm(prompt)
     
-# 測試用
-if __name__ == "__main__":
-    expert = FossilExpert()
-    print("測試無關話題:", expert.determine_intent("做一個4bit減法器")) # 應該回傳 IRRELEVANT
-    print("測試相關話題:", expert.determine_intent("這個牙齒有波浪狀紋路")) # 應該回傳 IDENTIFY
+# # 測試用
+# if __name__ == "__main__":
+#     expert = FossilExpert()
+#     print("測試無關話題:", expert.determine_intent("做一個4bit減法器")) # 應該回傳 IRRELEVANT
+#     print("測試相關話題:", expert.determine_intent("這個牙齒有波浪狀紋路")) # 應該回傳 IDENTIFY

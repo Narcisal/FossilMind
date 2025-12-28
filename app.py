@@ -13,7 +13,6 @@ from utils import get_wiki_image, extract_keyword
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# 初始化 Expert (它會自己去 config 抓 Key)
 expert = FossilExpert()
 
 # 頁面路由
@@ -27,7 +26,7 @@ def chat_page(): return render_template("chat.html")
 def map_page(): return render_template("map.html")
 
 
-# 對話 API，用 database 和 utils 
+# 對話 API
 
 @app.route("/api/chats", methods=["GET"])
 def get_chats():
@@ -65,7 +64,7 @@ def get_messages(chat_id):
     if chat_id in db: return jsonify(db[chat_id]["messages"])
     return jsonify([]), 404
 
-# --- 核心對話 API ---
+# 核心對話 API
 @app.route("/chat_api", methods=["POST"])
 def chat_api():
     data = request.json
@@ -88,32 +87,32 @@ def chat_api():
     print(f"User Intent: {intent}")
 
     ai_response_text = ""
-    wiki_image_url = None # 預設為 None (這樣沒找到就不會顯示)
+    wiki_image_url = None # 圖片很容易找不到，預設 None
 
-    # 3. 執行邏輯
+    # 3. 執行邏輯 (FSM)
     if intent == "IRRELEVANT":
         ai_response_text = "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
 
     elif intent == "IDENTIFY":
-        # === A. 鑑定化石 ===
+        # A. 鑑定化石
         ai_response_text = expert.identify_fossil(user_input)
         
-        # === B. 找 Wiki 圖片 (新增功能) ===
-        # 1. 先抓學名 (粗體字)
+        # B. 找 Wiki 圖片 (新增功能)
+        # a. 找學名
         keyword = extract_keyword(ai_response_text)
         if not keyword: 
-            keyword = user_input # 沒抓到學名就用使用者輸入去搜
+            keyword = user_input # 沒找到就用使用者輸入去搜
         
         print(f"Searching Wiki for: {keyword}")
         
-        # 2. 呼叫工具抓圖
+        # b. 用工具抓圖
         found_img = get_wiki_image(keyword)
         
-        # 3. 只有當真的有抓到圖時，才設定變數 (避免顯示空框)
+        # c. 只有當真的有抓到圖時，才設定變數，避免顯示空框
         if found_img:
             wiki_image_url = found_img
 
-        # === C. 自動畫演化圖 (保留原本功能) ===
+        # C. 畫演化分支圖
         try:
             print("Auto-generating evolution graph...")
             dot_code = expert.generate_evolution_graph(ai_response_text)
@@ -131,7 +130,7 @@ def chat_api():
             print(f"Auto-Graph Error: {e}")
 
     elif intent == "GRAPH":
-        # 主動要求畫圖
+        # 使用者主動要求畫圖
         context = get_last_ai_context(db[chat_id]["messages"])
         if context:
             try:
@@ -143,7 +142,6 @@ def chat_api():
                     src.format = 'png'
                     src.render(filepath, cleanup=True)
                     
-                    # 這裡把演化圖當作主要圖片回傳
                     wiki_image_url = f"/static/{filename}.png" 
                     ai_response_text = "這是根據目前的鑑定結果，所繪製的親緣演化關係圖："
                 else:
@@ -180,8 +178,9 @@ def chat_api():
         "new_title": db[chat_id]["title"]
     })
 
-# 地圖 API 
 
+
+# 地圖 API 
 @app.route("/api/bury", methods=["POST"])
 def api_bury():
     data = request.json
@@ -190,7 +189,7 @@ def api_bury():
         clean_json = raw_data.replace("```json", "").replace("```", "").strip()
         return jsonify({"success": True, "fossil": json.loads(clean_json)})
     except Exception as e:
-        print(f"Bury Error: {e}") # 加個 print 方便除錯
+        print(f"Bury Error: {e}") # 除錯用
         return jsonify({"success": False, "error": str(e)})
 
 @app.route("/api/examine", methods=["POST"])
@@ -205,5 +204,5 @@ def api_examine():
 
 if __name__ == "__main__":
     if not os.path.exists('static'): os.makedirs('static')
-    print("🦕 FossilMind 伺服器啟動中... (http://127.0.0.1:5000)")
+    print("FossilMind 伺服器啟動中... (http://127.0.0.1:5000)")
     app.run(debug=True, port=5000)
