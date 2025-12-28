@@ -47,20 +47,21 @@
 
 #### B. 準備 Ollama 模型
 請確認 Ollama 服務已啟動，並下載 `llama3` 模型：
-* `ollama pull llama3`
+`ollama pull llama3`
 
 ### 3. 專案設置
 * step 1: 下載專案
 `git clone https://github.com/Narcisal/FossilMind.git`
 
 * Step 2: 安裝 Python 套件
-
 `pip install -r requirements.txt`
 
 ### 4. 啟動系統 (Run Application)
 執行以下指令啟動 Flask 伺服器：
 `python app.py`
+
 看到以下訊息代表啟動成功：
+
 `🦕 FossilMind 伺服器啟動中... (http://127.0.0.1:5000)`
 `請開啟瀏覽器訪問：http://127.0.0.1:5000`
 
