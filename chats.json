@@ -160,5 +160,49 @@
                 "content": "<p>這看起來非常像是<strong>古代巨鼠 (Palaeomys)</strong> 的化石！</p>\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 中</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Palaeomys</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Rodentia > †Palaeomyidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>Paleocene (Ypresian)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>雜食性</span></div>\n    </div>\n</div>\n<br>\n<p>此骨骼呈現粗壯的股骨，顯示該動物為大型齒類，生活於熱帶森林中，具備強壯的腿部肌肉以支撐其較大的體型。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_29def7448b9e4910b5337fb9764604ba.png)"
             }
         ]
+    },
+    "aa8de02d-7851-4609-b7da-63f4358508ca": {
+        "title": "手掌大小的猿猴類頭骨...",
+        "timestamp": 1766943521.281743,
+        "messages": [
+            {
+                "role": "user",
+                "content": "手掌大小的猿猴類頭骨"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>小型猴科 (Miopithecus vancouveri)</strong> 的化石！</p>\n\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 中</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Miopithecus vancouveri</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>靈長目 > 猴科</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>更新世（Miocene，約 20–16 百萬年前）</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>雜食性</span></div>\n    </div>\n</div>\n<br>\n<p>頭骨小巧，額前顳部突出，牙齒較大，顯示其食性多樣。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_63fb60c01295405e83878df50402066f.png)"
+            },
+            {
+                "role": "user",
+                "content": "海神三葉蟲"
+            },
+            {
+                "role": "assistant",
+                "content": "嗨！感謝你提到「海神三葉蟲」，但目前我們的討論聚焦於剛剛鑑定的化石——**小型猴科 Miopithecus vancouveri**。如果你想了解這隻古老小猴的生活環境、演化關係或任何相關問題，隨時告訴我！如果你也對三葉蟲（尤其是海神三葉蟲）感興趣，我很樂意在我們討論完 Miopithecus 後再為你介紹。先讓我們先聊聊這隻小猴吧！"
+            }
+        ]
+    },
+    "3ef53f89-25a7-4579-8b32-55bbee3845f5": {
+        "title": "紅色貝殼...",
+        "timestamp": 1766944987.7786634,
+        "messages": [
+            {
+                "role": "user",
+                "content": "紅色貝殼"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>紅貝 (Crassostrea sp.)</strong> 的化石！</p>\n\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 低</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Crassostrea sp.</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Bivalvia > Ostreidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>未知</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>滤食性</span></div>\n    </div>\n</div>\n<br>\n<p>這是一個可能的牡蠣化石，呈現紅色外殼，可能由鐵氧化物造成顏色沉著。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_93fa2f1f0a0148de812b0bbfcea4e222.png)"
+            },
+            {
+                "role": "user",
+                "content": "五輻對稱的圓形狀物"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>海星 (Asterias rubens)</strong> 的化石！</p>\n\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 低</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Asterias rubens</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Forcipulatida > Asteriidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>中生代 (侏羅紀至白堊紀)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>捕食性</span></div>\n    </div>\n</div>\n<br>\n<p>此化石呈現五條主軸，外形近似圓形，表面可能有凸起或褶皱的結構。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_7b41af37320f4c7db2f1aae49fa26888.png)"
+            }
+        ]
     }
 }

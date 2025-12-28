@@ -78,7 +78,7 @@ def chat_api():
 
     if not user_input or not chat_id: return jsonify({"error": "No input"}), 400
 
-    # 1. 讀取資料庫
+    # 1. 讀取/初始化資料庫
     db = load_db()
     if chat_id not in db:
         db[chat_id] = {"title": "新對話", "timestamp": time.time(), "messages": []}
@@ -92,51 +92,50 @@ def chat_api():
     print(f"User Intent: {intent}")
 
     ai_response_text = ""
-    main_image_url = None # 這是要傳給前端顯示在泡泡最下方的「主圖片」
+    wiki_image_url = None # 預設為 None (這樣沒找到就不會顯示)
 
     # 3. 執行邏輯
     if intent == "IRRELEVANT":
         ai_response_text = "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
 
     elif intent == "IDENTIFY":
-        # === 步驟 A: 鑑定化石 ===
+        # === A. 鑑定化石 ===
         ai_response_text = expert.identify_fossil(user_input)
         
-        # === 步驟 B: 找 Wiki 圖片 (設為主圖片) ===
+        # === B. 找 Wiki 圖片 (新增功能) ===
+        # 1. 先抓學名 (粗體字)
         keyword = extract_keyword(ai_response_text)
-        if not keyword: keyword = user_input 
+        if not keyword: 
+            keyword = user_input # 沒抓到學名就用使用者輸入去搜
+        
         print(f"Searching Wiki for: {keyword}")
-        main_image_url = get_wiki_image(keyword)
+        
+        # 2. 呼叫工具抓圖
+        found_img = get_wiki_image(keyword)
+        
+        # 3. 只有當真的有抓到圖時，才設定變數 (避免顯示空框)
+        if found_img:
+            wiki_image_url = found_img
 
-        # === 步驟 C: 自動畫演化圖 (這是新增的！) ===
-        # 我們嘗試生成演化圖，並用 Markdown 語法把它加到文字最後面
+        # === C. 自動畫演化圖 (保留原本功能) ===
         try:
             print("Auto-generating evolution graph...")
             dot_code = expert.generate_evolution_graph(ai_response_text)
-            
             if dot_code and "digraph" in dot_code:
-                # 產生唯一的檔名
                 filename = f"evo_{uuid.uuid4().hex}"
                 filepath = os.path.join('static', filename)
-                
-                # 繪製圖片
                 src = graphviz.Source(dot_code)
                 src.format = 'png'
                 src.render(filepath, cleanup=True)
                 
-                # 生成 URL
+                # 把演化圖「嵌入」在文字最後面
                 graph_url = f"/static/{filename}.png"
-                
-                # 🔥 關鍵：把演化圖用 Markdown 語法接在回答後面
-                # 這樣前端就會顯示：[文字] + [演化圖] + [Wiki圖(在最下方)]
                 ai_response_text += f"\n\n### 🧬 親緣演化關係\n![演化圖]({graph_url})"
-                
         except Exception as e:
             print(f"Auto-Graph Error: {e}")
-            # 畫圖失敗就算了，不要讓整個程式當掉，也不用特別顯示錯誤訊息給使用者
 
     elif intent == "GRAPH":
-        # 主動要求畫圖的邏輯保持不變
+        # 主動要求畫圖
         context = get_last_ai_context(db[chat_id]["messages"])
         if context:
             try:
@@ -148,12 +147,12 @@ def chat_api():
                     src.format = 'png'
                     src.render(filepath, cleanup=True)
                     
-                    main_image_url = f"/static/{filename}.png"
+                    # 這裡把演化圖當作主要圖片回傳
+                    wiki_image_url = f"/static/{filename}.png" 
                     ai_response_text = "這是根據目前的鑑定結果，所繪製的親緣演化關係圖："
                 else:
                     ai_response_text = "抱歉，生成演化圖時發生錯誤。"
             except Exception as e:
-                print(f"Graph Error: {e}")
                 ai_response_text = "系統繪圖模組發生異常 (Graphviz)。"
         else:
             ai_response_text = "請先讓我鑑定一個化石，我才知道要畫什麼演化圖喔！"
@@ -168,10 +167,10 @@ def chat_api():
     # 4. 儲存與回傳
     user_msg = {'role': 'user', 'content': user_input}
     
-    # 存進資料庫的內容要包含 Markdown 圖片語法，這樣歷史紀錄才看得到
+    # 存進資料庫 (為了讓歷史紀錄也有圖)
     final_content_for_db = ai_response_text
-    if main_image_url:
-        final_content_for_db += f'\n\n![Image]({main_image_url})' 
+    if wiki_image_url:
+        final_content_for_db += f'\n\n![Wiki Image]({wiki_image_url})' 
 
     ai_msg = {'role': 'assistant', 'content': final_content_for_db}
 
@@ -180,8 +179,8 @@ def chat_api():
     save_db(db)
 
     return jsonify({
-        "response": ai_response_text,     # 這裡面可能已經包含演化圖的 Markdown 了
-        "image_url": main_image_url,      # 這是 Wiki 圖片 (會顯示在最後面)
+        "response": ai_response_text,     # 包含演化圖 (Markdown)
+        "image_url": wiki_image_url,      # 包含 Wiki 圖 (如果有的話)
         "new_title": db[chat_id]["title"]
     })
 

@@ -34,28 +34,37 @@ class FossilExpert:
 
     def determine_intent(self, user_input):
         """
-        Step 1: 感知層 (Perception) - q1
-        判斷使用者的意圖是「鑑定」、「畫圖」、「問問題」還是「來亂的」。
+        Step 1: 感知層 (Perception)
+        修正版：加強對「名詞直接輸入」的判定，避免卡在上一輪話題。
         """
         prompt = f"""
-        你是一個意圖分類器。請分析使用者的輸入："{user_input}"
+        你是一個意圖分類器。請分析使用者輸入："{user_input}"
         
         請只回傳以下四個關鍵字之一（不要有其他解釋）：
-        1. **IDENTIFY** : 如果使用者在描述外觀、特徵，或上傳了圖片的描述 (例如："黑色的石頭，有條紋", "這是什麼", "幫我鑑定")。
-        2. **GRAPH** : 如果使用者明確要求看圖、演化樹、親緣關係 (例如："畫出演化圖", "好呀", "給我看圖片", "它是什麼科的", "視覺化")。
-        3. **EXPLAIN** : 如果使用者是在針對已知的結果提問，或詢問細節 (例如："為什麼不是恐龍？", "它吃什麼？", "年代多久？")。
-        4. **IRRELEVANT** : 如果輸入完全與古生物、化石、地質或生物學**無關** (例如："寫一個 4bit 減法器", "寫程式", "今天天氣", "講笑話", "數學問題")。
+        1. **IDENTIFY** : 
+           - 使用者在描述外觀、特徵 (e.g. "黑色石頭", "像大象的骨頭")。
+           - 或者使用者**直接輸入一個物種名稱** (e.g. "三葉蟲", "暴龍", "海神三葉蟲")，這代表他想查這個物種。
+           - 或者明確要求鑑定 (e.g. "這是什麼").
+           
+        2. **GRAPH** : 
+           - 使用者明確要求看圖、演化樹、親緣關係 (e.g. "畫圖", "演化圖", "視覺化").
+
+        3. **EXPLAIN** : 
+           - 使用者針對**已知結果**提問細節 (e.g. "為什麼？", "它吃什麼？", "年代多久？", "真的嗎？").
+           - 注意：如果輸入是一個全新的名詞（與上下文無關），請優先歸類為 IDENTIFY。
+
+        4. **IRRELEVANT** : 完全無關的話題 (e.g. "寫程式", "今天天氣").
         
         Answer:
         """
-        response = self._call_llm(prompt, temperature=0.1) 
+        # 這裡稍微把 temperature 調低一點 (0.1 -> 0.0)，讓分類更穩定
+        response = self._call_llm(prompt, temperature=0.0) 
         intent = response.strip().upper()
         
-        # 簡單的關鍵字防呆
         if "GRAPH" in intent: return "GRAPH"
         if "EXPLAIN" in intent: return "EXPLAIN"
         if "IRRELEVANT" in intent: return "IRRELEVANT"
-        return "IDENTIFY" 
+        return "IDENTIFY"
 
     def identify_fossil(self, description):
         """
