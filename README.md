@@ -17,52 +17,52 @@
   
 ## File Structure
 
-| 檔案 | 說明 |
+| File | Description |
 | :--- | :--- |
-| `app.py` | **Controller**: 處理 Flask 路由、圖片組裝與回應邏輯 |
-| `backend.py` | **Model**: 封裝 LLM 邏輯、Prompt Engineering 與意圖判斷 |
-| `utils.py` | **Tools**: 負責 Wiki API 搜尋、Regex 關鍵字提取與標籤清理 |
-| `database.py` | **Data**: 負責 JSON 對話紀錄的讀寫 |
-| `config.py` | **Config**: 存放 API Key 與全域設定 |
-| `templates/` | 前端 HTML (Chat UI & Leaflet Map) |
-| `static/` | 存放 CSS、JS 以及**生成的演化圖** |
+| `app.py` | **Controller**: Handles Flask routing, image assembly, and response logic |
+| `backend.py` | **Model**: Encapsulates LLM logic, Prompt Engineering, and intent classification |
+| `utils.py` | **Tools**: Handles Wiki API search, Regex keyword extraction, and tag cleaning |
+| `database.py` | **Data**: Manages JSON conversation history read/write operations |
+| `config.py` | **Config**: Stores API Keys and global configuration |
+| `templates/` | Frontend HTML (Chat UI & Leaflet Map) |
+| `static/` | Stores CSS, JS, and **generated evolution graphs** |
 
 ---
 
-## ⚙️ 安裝與執行指引 (Installation Guide)
+## Installation Guide
 
 ### 1. Prerequisites
 
-* **Python**: 3.9 或以上版本
-* **Graphviz**: **必備系統軟體** 
-* **Ollama**: 需安裝並執行本地 LLM Server
+* **Python**: Version 3.9 or higher
+* **Graphviz**: **Required system software** 
+* **Ollama**: Install and run local LLM Server
 
 ### 2. System Dependencies
 
-#### A. 安裝 Graphviz
+#### A. Install Graphviz
 
-* Windows: [下載安裝檔](https://graphviz.org/download/)
+* Windows: [Download installer](https://graphviz.org/download/)
 * macOS: `brew install graphviz`
 * Linux: `sudo apt-get install graphviz`
 
-#### B. 準備 Ollama 模型
-請確認 Ollama 服務已啟動，並下載 `llama3` 模型：
+#### B. Prepare Ollama Model
+Ensure Ollama service is running, and download the `llama3` model:
 `ollama pull llama3`
 
-### 3. 專案設置
-* step 1: 下載專案
+### 3. Project Setup
+* Step 1: Clone the project
 `git clone https://github.com/Narcisal/FossilMind.git`
 
-* Step 2: 安裝 Python 套件
+* Step 2: Install Python packages
 `pip install -r requirements.txt`
 
-### 4. 啟動系統 (Run Application)
-執行以下指令啟動 Flask 伺服器：
+### 4. Run Application
+Execute the following command to start the Flask server:
 `python app.py`
 
-看到以下訊息代表啟動成功：
+You should see the following message indicating successful startup:
 
-`FossilMind 伺服器啟動中... (http://127.0.0.1:5000)`
+`FossilMind server is starting... (http://127.0.0.1:5000)`
 
 
 ## FSM
