@@ -11,202 +11,45 @@
 
     <style>
         :root {
-            --bg-color: #f4f6f8;
-            --chat-bg: #ffffff;
-            --primary-color: #4a6fa5;
-            --user-msg-bg: #e3effd;
-            --bot-msg-bg: #f0f2f5;
-            --text-dark: #2c3e50;
-            --text-light: #6c757d;
-            --shadow: 0 4px 15px rgba(0,0,0,0.05);
+            --bg-color: #f4f6f8; --chat-bg: #ffffff; --primary-color: #4a6fa5;
+            --user-msg-bg: #e3effd; --text-dark: #2c3e50; --text-light: #6c757d;
         }
-
-        body {
-            margin: 0;
-            background-color: var(--bg-color);
-            font-family: 'Noto Sans TC', sans-serif;
-            color: var(--text-dark);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 導航列 */
-        header {
-            background: white;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            z-index: 10;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .back-btn {
-            text-decoration: none;
-            color: var(--text-light);
-            font-size: 0.9rem;
-            transition: 0.3s;
-        }
+        body { margin: 0; background-color: var(--bg-color); font-family: 'Noto Sans TC', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        
+        header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 10px; }
+        .back-btn { text-decoration: none; color: var(--text-light); font-size: 0.9rem; transition: 0.3s; }
         .back-btn:hover { color: var(--primary-color); }
 
-        /* 聊天區域 */
-        .chat-container {
-            flex: 1;
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 30px 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            scroll-behavior: smooth;
-        }
-
-        .message {
-            display: flex;
-            align-items: flex-start;
-            max-width: 80%;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .message.user {
-            align-self: flex-end;
-            flex-direction: row-reverse;
-        }
+        .chat-container { flex: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 30px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
         
-        .message.ai {
-            align-self: flex-start;
-        }
+        .message { display: flex; align-items: flex-start; max-width: 80%; animation: fadeIn 0.3s ease; }
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .message.ai { align-self: flex-start; }
 
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 10px;
-            flex-shrink: 0;
-            font-size: 1.2rem;
-        }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 10px; flex-shrink: 0; font-size: 1.2rem; }
         .user .avatar { background-color: var(--primary-color); color: white; }
         .ai .avatar { background-color: #2c3e50; color: white; }
 
-        .bubble {
-            padding: 15px 20px;
-            border-radius: 15px;
-            line-height: 1.6;
-            position: relative;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-            word-wrap: break-word; /* 防止長文字破版 */
-        }
+        .bubble { padding: 15px 20px; border-radius: 15px; line-height: 1.6; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.03); word-wrap: break-word; background-color: var(--chat-bg); border: 1px solid #e0e0e0; }
+        .user .bubble { background-color: var(--user-msg-bg); color: var(--text-dark); border-color: transparent; }
         
-        .user .bubble {
-            background-color: var(--user-msg-bg);
-            color: var(--text-dark);
-            border-top-right-radius: 2px;
-        }
+        /* ✅ 圖片樣式：不管是 Wiki 還是 演化圖，都套用這個 */
+        .bubble img { max-width: 100%; border-radius: 8px; margin-top: 15px; border: 1px solid #ddd; display: block; }
 
-        .ai .bubble {
-            background-color: var(--chat-bg);
-            border: 1px solid #e0e0e0;
-            border-top-left-radius: 2px;
-        }
-        
-        /* 讓 Markdown 的圖片自適應 */
-        .bubble img { max-width: 100%; border-radius: 8px; margin-top: 10px; }
+        .agent-status { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--primary-color); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; background: #eef4fc; padding: 4px 10px; border-radius: 4px; width: fit-content; }
 
-        /* Agent 狀態條 */
-        .agent-status {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--primary-color);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #eef4fc;
-            padding: 4px 10px;
-            border-radius: 4px;
-            width: fit-content;
-        }
-
-        /* 輸入區域 */
-        .input-area {
-            background: white;
-            padding: 20px;
-            box-shadow: 0 -2px 20px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .input-wrapper {
-            max-width: 900px;
-            width: 100%;
-            display: flex;
-            gap: 10px;
-            background: var(--bg-color);
-            padding: 10px;
-            border-radius: 50px;
-            border: 1px solid #e0e0e0;
-            transition: 0.3s;
-        }
-        
-        .input-wrapper:focus-within {
-            border-color: var(--primary-color);
-            background: white;
-            box-shadow: 0 0 0 4px rgba(74, 111, 165, 0.1);
-        }
-
-        input[type="text"] {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 10px 15px; /* 稍微增加左邊距 */
-            font-size: 1rem;
-            outline: none;
-            color: var(--text-dark);
-        }
-
-        .icon-btn {
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
+        .input-area { background: white; padding: 20px; box-shadow: 0 -2px 20px rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: center; }
+        .input-wrapper { max-width: 900px; width: 100%; display: flex; gap: 10px; background: var(--bg-color); padding: 10px; border-radius: 50px; border: 1px solid #e0e0e0; transition: 0.3s; }
+        .input-wrapper:focus-within { border-color: var(--primary-color); background: white; box-shadow: 0 0 0 4px rgba(74, 111, 165, 0.1); }
+        input[type="text"] { flex: 1; border: none; background: transparent; padding: 10px 15px; font-size: 1rem; outline: none; color: var(--text-dark); }
+        .icon-btn { background: none; border: none; color: #888; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
         .icon-btn:hover { background: #e0e0e0; color: #333; }
-        
-        .send-btn {
-            background-color: var(--primary-color);
-            color: white;
-        }
+        .send-btn { background-color: var(--primary-color); color: white; }
         .send-btn:hover { background-color: #3b5d8f; }
         .send-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -224,15 +67,15 @@
             <div class="avatar"><i class="fa-solid fa-robot"></i></div>
             <div class="bubble">
                 嗨！我是 FossilMind。🦕<br>
-                雖然我現在暫時無法看照片，但我可以回答任何關於化石、地質年代或演化的問題。你可以問我：「暴龍生活在什麼時代？」或「請幫我畫出大象的演化圖」。
+                雖然我現在暫時無法看照片，但我可以幫你鑑定化石描述，並幫你找圖片！<br>
+                你可以輸入：「紅貝殼化石」或「幫我畫出大象的演化圖」。
             </div>
         </div>
     </div>
 
     <div class="input-area">
         <div class="input-wrapper">
-            <input type="text" id="user-input" placeholder="輸入你想問的問題... (例如: 暴龍的牙齒有多大?)">
-            
+            <input type="text" id="user-input" placeholder="輸入問題... (例如: 這是什麼化石?)">
             <button class="icon-btn send-btn" id="send-btn" onclick="sendMessage()">
                 <i class="fa-solid fa-paper-plane"></i>
             </button>
@@ -243,65 +86,56 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        
-        // 簡單產生一個 session ID，讓這次對話可以延續
-        let currentChatId = "chat_" + Date.now();
+        let currentChatId = null;
 
-        // 初始化：建立新對話 (通知後端)
-        fetch('/api/chats', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                currentChatId = data.id;
-                console.log("Chat Session Created:", currentChatId);
-            });
+        // 初始化 Session
+        fetch('/api/chats', { method: 'POST' }).then(res => res.json()).then(data => { currentChatId = data.id; });
 
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;
 
-            // 1. 顯示使用者訊息
             appendMessage('user', text);
             userInput.value = '';
             sendBtn.disabled = true;
 
-            // 2. 顯示 Loading
             const loadingId = appendLoadingState("FossilExpert 思考中...");
 
             try {
-                // 3. 呼叫後端 API
                 const res = await fetch('/chat_api', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: currentChatId, message: text })
                 });
                 const data = await res.json();
-
-                // 4. 移除 Loading，顯示 AI 回應
                 removeMessage(loadingId);
                 
                 if (data.error) throw new Error(data.error);
 
-                // 使用 marked 解析 Markdown 格式
-                appendMessage('ai', marked.parse(data.response), true);
+                // ✅ 這裡會同時顯示文字和圖片 (如果有 image_url 的話)
+                appendMessage('ai', marked.parse(data.response), true, data.image_url);
 
             } catch (err) {
                 console.error(err);
                 removeMessage(loadingId);
-                appendMessage('ai', `⚠️ 發生錯誤：無法連接到伺服器。請檢查 app.py 是否正在運行。`, false);
+                appendMessage('ai', `⚠️ 發生錯誤：${err.message}`, false);
             } finally {
                 sendBtn.disabled = false;
                 userInput.focus();
             }
         }
 
-        function appendMessage(role, text, isHtml = false) {
+        function appendMessage(role, text, isHtml = false, imageUrl = null) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${role}`;
             
             const avatarIcon = role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
-            
-            // 如果不是 HTML (即使用者輸入)，將換行轉為 <br>
             let content = isHtml ? text : text.replace(/\n/g, '<br>');
+
+            // ✅ 如果有圖片，就把它加到泡泡裡
+            if (imageUrl) {
+                content += `<img src="${imageUrl}" alt="Fossil or Graph">`;
+            }
 
             msgDiv.innerHTML = `
                 <div class="avatar">${avatarIcon}</div>
@@ -317,14 +151,9 @@
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ai`;
             msgDiv.id = id;
-            
             msgDiv.innerHTML = `
                 <div class="avatar"><i class="fa-solid fa-robot"></i></div>
-                <div class="bubble">
-                    <div class="agent-status">
-                        <i class="fa-solid fa-circle-notch fa-spin"></i> 狀態: ${statusText}
-                    </div>
-                </div>
+                <div class="bubble"><div class="agent-status"><i class="fa-solid fa-circle-notch fa-spin"></i> 狀態: ${statusText}</div></div>
             `;
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
