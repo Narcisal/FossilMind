@@ -23,106 +23,159 @@
 stateDiagram-v2
     direction TB
 
-    %% 定義樣式
-    classDef startEnd fill:#f96,stroke:#333,stroke-width:2px,color:white;
-    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:1px;
+    %% ==========================================
+    %% 樣式定義 (Color Palette)
+    %% ==========================================
+    classDef server fill:#37474f,stroke:#263238,stroke-width:2px,color:white;
+    classDef chatZone fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef mapZone fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    
     classDef llm fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef io fill:#fff3e0,stroke:#ef6c00,stroke-width:1px;
-    classDef decision fill:#fce4ec,stroke:#c2185b,stroke-width:1px,shape:rhombus;
+    classDef io fill:#fff8e1,stroke:#fbc02d,stroke-width:1px;
+    classDef logic fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px;
+    classDef endpoint fill:#ffccbc,stroke:#d84315,stroke-width:2px;
 
-    %% 1. 初始化階段
-    [*] --> Request_Received : POST /chat_api
-    state "Load & Init Session" as Session
-    Request_Received --> Session : load_db()
-    
-    %% 2. 意圖判斷
-    state "Intent Classification" as IntentClass
-    Session --> IntentClass : expert.determine_intent()
-    
-    %% 3. 分流決策
-    state is_intent <<choice>>
-    IntentClass --> is_intent : Return Intent String
-    
     %% ==========================================
-    %% 分支 A: IDENTIFY (最複雜的邏輯)
+    %% 系統入口
     %% ==========================================
-    state "IDENTIFY Process" as Identify_Flow {
+    [*] --> Server_Listening : python app.py
+    state "Flask Server Listening (Port 5000)" as Server_Listening
+    class Server_Listening server
+
+    %% ==========================================
+    %% 子系統 1: 對話系統 (Chat System)
+    %% ==========================================
+    state "Chat Subsystem (Detail)" as Chat_System {
         direction TB
         
-        state "LLM: Identify Fossil" as ID_LLM
-        class ID_LLM llm
+        state "POST /chat_api" as Chat_EP
+        class Chat_EP endpoint
         
-        state "Extract Keyword (Regex)" as Regex
-        class Regex process
+        state "Load DB & Init" as DB_Load
+        state "Intent Classification" as Intent_Check
+        class Intent_Check llm
+
+        Chat_EP --> DB_Load
+        DB_Load --> Intent_Check : expert.determine_intent()
+
+        state is_intent <<choice>>
+        Intent_Check --> is_intent
+
+        %% 分支 A: IDENTIFY (RAG + Graph)
+        state "IDENTIFY Workflow" as ID_Flow {
+            direction TB
+            state "LLM: Identify Fossil" as L1
+            class L1 llm
+            state "Regex: Extract Name" as P1
+            class P1 logic
+            state "API: Wiki Search" as IO1
+            class IO1 io
+            state "LLM: Gen Evolution Graph" as L2
+            class L2 llm
+            state "Tool: Render PNG" as IO2
+            class IO2 io
+
+            [*] --> L1
+            L1 --> P1 : expert.identify_fossil()
+            P1 --> IO1 : extract_keyword()
+            IO1 --> L2 : Found?
+            L2 --> IO2 : expert.generate_evolution_graph()
+            IO2 --> [*]
+        }
+
+        %% 分支 B: GRAPH
+        state "GRAPH Workflow" as Graph_Flow {
+            direction TB
+            state "Context Check" as C1
+            class C1 logic
+            state "LLM: Gen DOT" as L3
+            class L3 llm
+            
+            [*] --> C1
+            C1 --> L3 : Has Context
+            L3 --> [*]
+        }
+
+        %% 分支 C: EXPLAIN
+        state "EXPLAIN Workflow" as Explain_Flow {
+            state "LLM: Reasoning" as L4
+            class L4 llm
+            [*] --> L4
+        }
         
-        state "Tool: Wiki Search API" as Wiki
-        class Wiki io
-        
-        state "LLM: Generate DOT Code" as Graph_LLM
-        class Graph_LLM llm
-        
-        state "Tool: Graphviz Render" as Render
-        class Render io
-        
-        [*] --> ID_LLM : expert.identify_fossil()
-        ID_LLM --> Regex : extract_keyword()
-        Regex --> Wiki : get_wiki_image()
-        Wiki --> Graph_LLM : expert.generate_evolution_graph()
-        Graph_LLM --> Render : src.render() (Generate PNG)
-        Render --> [*] : Append Markdown Image
+        %% 分支 D: IRRELEVANT
+        state "Static Reject" as Reject_Flow
+
+        %% 連接
+        is_intent --> ID_Flow : IDENTIFY
+        is_intent --> Graph_Flow : GRAPH
+        is_intent --> Explain_Flow : EXPLAIN
+        is_intent --> Reject_Flow : IRRELEVANT
+
+        %% 結尾
+        state "Save Chat History" as Save_DB
+        ID_Flow --> Save_DB
+        Graph_Flow --> Save_DB
+        Explain_Flow --> Save_DB
+        Reject_Flow --> Save_DB
     }
+    class Chat_System chatZone
 
     %% ==========================================
-    %% 分支 B: GRAPH
+    %% 子系統 2: 地圖挖掘系統 (Map Excavation)
     %% ==========================================
-    state "GRAPH Process" as Graph_Flow {
+    state "Map Excavation System (Detail)" as Map_System {
         direction TB
-        state "Context Check" as CtxCheck
-        state "LLM: Generate DOT" as G_LLM
-        class G_LLM llm
-        state "Tool: Render PNG" as G_Render
-        class G_Render io
         
-        [*] --> CtxCheck : get_last_ai_context()
-        CtxCheck --> G_LLM : Context Exists?
-        G_LLM --> G_Render : Graphviz Source
+        %% 階段 1: 埋藏判定 (Timekeeper)
+        state "Phase 1: Excavation" as Phase1 {
+            direction TB
+            state "POST /api/bury" as Bury_EP
+            class Bury_EP endpoint
+
+            state "Agent 1: The Timekeeper" as Timekeeper_LLM
+            class Timekeeper_LLM llm
+            
+            state "Parse JSON & Clean" as Parse_JSON
+            class Parse_JSON logic
+
+            state is_found <<choice>>
+
+            Bury_EP --> Timekeeper_LLM : expert.bury_fossil(lat, lng, era)
+            Timekeeper_LLM --> Parse_JSON : Geology Logic Check
+            Parse_JSON --> is_found : fossil['found']?
+
+            state "Return: Found Fossil Data" as Ret_Found
+            state "Return: Not Found Reason" as Ret_Empty
+            
+            is_found --> Ret_Found : True
+            is_found --> Ret_Empty : False
+        }
+
+        %% 階段 2: 鑑定報告 (Paleontologist)
+        state "Phase 2: Examination" as Phase2 {
+            direction TB
+            state "POST /api/examine" as Exam_EP
+            class Exam_EP endpoint
+
+            state "Agent 2: The Paleontologist" as Paleo_LLM
+            class Paleo_LLM llm
+
+            state "Format HTML Response" as Format_HTML
+            class Format_HTML logic
+
+            Exam_EP --> Paleo_LLM : expert.dig_fossil(fossil_data)
+            Paleo_LLM --> Format_HTML : Generate Report
+            Format_HTML --> [*] : Return JSON
+        }
+        
+        %% 前端邏輯連接
+        Ret_Found --> Phase2 : Client triggers Examination
     }
+    class Map_System mapZone
 
     %% ==========================================
-    %% 分支 C: EXPLAIN
+    %% 路由分派
     %% ==========================================
-    state "EXPLAIN Process" as Explain_Flow {
-        state "LLM: Reasoning" as E_LLM
-        class E_LLM llm
-        [*] --> E_LLM : expert.explain_reasoning()
-    }
-
-    %% ==========================================
-    %% 分支 D: IRRELEVANT
-    %% ==========================================
-    state "Static Response" as Irrelevant_Flow {
-        [*] --> Reject : Return Predefined String
-    }
-
-    %% 連接分流
-    is_intent --> Identify_Flow : intent == "IDENTIFY"
-    is_intent --> Graph_Flow : intent == "GRAPH"
-    is_intent --> Explain_Flow : intent == "EXPLAIN"
-    is_intent --> Irrelevant_Flow : intent == "IRRELEVANT"
-
-    %% 4. 合併結果
-    state "Response Formulation" as Response
-    Identify_Flow --> Response : Text + Wiki URL + Graph Path
-    Graph_Flow --> Response : Text + Graph Path
-    Explain_Flow --> Response : Explanation Text
-    Irrelevant_Flow --> Response : Warning Text
-
-    %% 5. 持久化
-    state "Save Database" as Save
-    class Save io
-    Response --> Save : save_db()
-    
-    %% 6. 結束
-    Save --> Return_JSON : jsonify()
-    Return_JSON --> [*]
-    class Return_JSON startEnd
+    Server_Listening --> Chat_System : /chat_api
+    Server_Listening --> Map_System : /api/bury OR /api/examine
