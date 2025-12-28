@@ -62,7 +62,7 @@ Execute the following command to start the Flask server:
 
 You should see the following message indicating successful startup:
 
-`FossilMind server is starting... (http://127.0.0.1:5000)`
+`FossilMind 伺服器啟動中... (http://127.0.0.1:5000)`
 
 
 ## FSM
