@@ -86,11 +86,11 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        let currentChatId = null;
+        // let currentChatId = null;
 
         // 初始化 Session
-        fetch('/api/chats', { method: 'POST' }).then(res => res.json()).then(data => { currentChatId = data.id; });
-
+        let currentChatId = 'session_' + Date.now();
+        console.log("Current Chat ID:", currentChatId);
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;

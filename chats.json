@@ -26,5 +26,81 @@
                 "content": "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
             }
         ]
+    },
+    "session_1766958348104": {
+        "title": "海百合...",
+        "timestamp": 1766958372.0590892,
+        "messages": [
+            {
+                "role": "user",
+                "content": "海百合"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>海百合 (Crinoidea sp.)</strong> 的化石！</p>\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 低</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Crinoidea sp.</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Crinoidea > Crinoidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>Ordovician–Present</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>過濾性捕食者（以微小有機粒為食）</span></div>\n    </div>\n</div>\n<br>\n<p>海百合是一種古老的海洋脊索動物，呈現多數種具有類似花瓣的腕部，常見於古海底沉積物中，並且以過濾微小有機粒為食。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_c5dc86fae3664e3d96227b6672d68790.png)"
+            }
+        ]
+    },
+    "session_1766958937091": {
+        "title": "足球...",
+        "timestamp": 1766960359.8526878,
+        "messages": [
+            {
+                "role": "user",
+                "content": "足球"
+            },
+            {
+                "role": "assistant",
+                "content": "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
+            },
+            {
+                "role": "user",
+                "content": "海百合"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>海百合 (Crinoidea)</strong> 的化石！</p>\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 中</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Crinoidea</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Crinoidea > Crinoidea</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>古生代（寒武世至石炭世）至現代</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>滤食性海洋底栖动物</span></div>\n    </div>\n</div>\n<br>\n<p>海百合的化石常呈枝狀的“花瓣”或“枝條”結構，附在石質基礎或礦物基底上，顯示出海洋沉積環境的證據。</p>\n[[Wiki: Crinoidea]]\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_853e6b76cfac435b9c54f646ad6cd455.png)"
+            },
+            {
+                "role": "user",
+                "content": "馬糞海膽"
+            },
+            {
+                "role": "assistant",
+                "content": "<div class=\"message ai\">\n    <div class=\"bubble\" style=\"background: #fff3cd; color: #856404; border: 1px solid #ffeeba;\">\n        <strong>⚠️ 無法識別</strong><br>\n        FossilMind 專注於古生物與化石鑑定，無法回答關於其他領域（如電子、程式、數學）的問題。<br>\n        請輸入化石特徵描述。\n    </div>\n</div>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_c46fa7a799c341b8ac018812a2b5aaa7.png)"
+            },
+            {
+                "role": "user",
+                "content": "翼手龍"
+            },
+            {
+                "role": "assistant",
+                "content": "<p><strong>翼手龍 (Pterodactylus antiquus)</strong> 的化石！</p>\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 高</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Pterodactylus antiquus</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Pterosauria > Pterodactylidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>Late Jurassic (~150 Ma)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>Piscivorous（主要以魚類為食）</span></div>\n    </div>\n</div>\n<br>\n<p>翼手龍是一種古代飛行爬行類，擁有長臂和獨特的翼膜，能在天空與海岸之間靈活滑翔，通常以魚類為主要食物。</p>\n[[Wiki: Pterodactylus]]\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_eb948e03af9f4f35a616ab3a317884e6.png)"
+            },
+            {
+                "role": "user",
+                "content": "暴龍"
+            },
+            {
+                "role": "assistant",
+                "content": "<p><strong>暴龍 (Tyrannosaurus rex)</strong> 的化石！</p>\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 高</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Tyrannosaurus rex</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>獸腳亞目 > 暴龍科</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>晚白堊世 (約6800萬至6600萬年前)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>肉食性</span></div>\n    </div>\n</div>\n<br>\n<p>巨型、力強的肉食性恐龍，以短小前肢、強壯後肢以及強大的下頜著稱。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_f798e8c9870a4053aec29cfd9b5d55a7.png)\n\n![Wiki Image](https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Tyrannosaurus_Rex_Holotype.jpg/960px-Tyrannosaurus_Rex_Holotype.jpg)"
+            },
+            {
+                "role": "user",
+                "content": "古頭怕海膽"
+            },
+            {
+                "role": "assistant",
+                "content": "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
+            },
+            {
+                "role": "user",
+                "content": "古頭帕海膽"
+            },
+            {
+                "role": "assistant",
+                "content": "<p><strong>古頭帕海膽 (Cidaris antiquus)</strong> 的化石！</p>\n\n![Wiki Image](https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Cidaris_cidaris_MHNT.jpg/960px-Cidaris_cidaris_MHNT.jpg)\n\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 高</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Cidaris antiquus</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Cidaroida > Cidaridae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>白堊紀 (約 1.0×10^8 年前)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>草食性，主要以藻類為食</span></div>\n    </div>\n</div>\n<br>\n<p>此種海膽具備堅硬的骨質殼體，表面覆有長而粗糙的棘突，常見於深海底部的沉積環境，化石保存良好，能顯示出典型的 Cidaroida 形態特徵。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_0acd4b25c8ab4f5ea1445f6751257fe6.png)"
+            }
+        ]
     }
 }

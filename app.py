@@ -1,14 +1,14 @@
 import os
 import time
 import uuid
+import json  
 import graphviz
 from flask import Flask, render_template, request, jsonify
-
 
 from config import SECRET_KEY 
 from backend import FossilExpert 
 from database import load_db, save_db, get_last_ai_context 
-from utils import get_wiki_image, extract_keyword 
+from utils import get_wiki_image, extract_keyword, clean_ai_response 
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -24,45 +24,6 @@ def chat_page(): return render_template("chat.html")
 
 @app.route("/map")
 def map_page(): return render_template("map.html")
-
-
-# 對話 API
-
-@app.route("/api/chats", methods=["GET"])
-def get_chats():
-    db = load_db()
-    chat_list = []
-    for chat_id, chat_data in db.items():
-        chat_list.append({
-            "id": chat_id,
-            "title": chat_data.get("title", "未命名對話"),
-            "timestamp": chat_data.get("timestamp", 0)
-        })
-    chat_list.sort(key=lambda x: x["timestamp"], reverse=True)
-    return jsonify(chat_list)
-
-@app.route("/api/chats", methods=["POST"])
-def create_chat():
-    db = load_db()
-    new_id = str(uuid.uuid4())
-    db[new_id] = {"title": "新對話", "timestamp": time.time(), "messages": []}
-    save_db(db)
-    return jsonify({"id": new_id, "title": "新對話"})
-
-@app.route("/api/chats/<chat_id>", methods=["DELETE"])
-def delete_chat(chat_id):
-    db = load_db()
-    if chat_id in db:
-        del db[chat_id]
-        save_db(db)
-        return jsonify({"success": True})
-    return jsonify({"error": "Chat not found"}), 404
-
-@app.route("/api/chats/<chat_id>/messages", methods=["GET"])
-def get_messages(chat_id):
-    db = load_db()
-    if chat_id in db: return jsonify(db[chat_id]["messages"])
-    return jsonify([]), 404
 
 # 核心對話 API
 @app.route("/chat_api", methods=["POST"])
@@ -95,39 +56,48 @@ def chat_api():
 
     elif intent == "IDENTIFY":
         # A. 鑑定化石
-        ai_response_text = expert.identify_fossil(user_input)
+        raw_response = expert.identify_fossil(user_input)
         
-        # B. 找 Wiki 圖片 (新增功能)
-        # a. 找學名
-        keyword = extract_keyword(ai_response_text)
-        if not keyword: 
-            keyword = user_input # 沒找到就用使用者輸入去搜
+        # B. 準備素材：關鍵字、乾淨文字、Wiki圖片
+        keyword = extract_keyword(raw_response)
+        clean_text = clean_ai_response(raw_response)
         
-        print(f"Searching Wiki for: {keyword}")
+        # 搜尋圖片 
+        search_key = keyword if keyword else user_input
+        print(f"Searching Wiki for: {search_key}")
         
-        # b. 用工具抓圖
-        found_img = get_wiki_image(keyword)
+        found_img = get_wiki_image(search_key)
         
-        # c. 只有當真的有抓到圖時，才設定變數，避免顯示空框
-        if found_img:
-            wiki_image_url = found_img
+        # C. 準備演化圖 
+        graph_markdown = ""
+        if keyword:
+            try:
+                print("Auto-generating evolution graph...")
+                dot_code = expert.generate_evolution_graph(f"Generate phylogeny tree for {keyword}")
+                if dot_code and "digraph" in dot_code:
+                    filename = f"evo_{uuid.uuid4().hex}"
+                    filepath = os.path.join('static', filename)
+                    src = graphviz.Source(dot_code)
+                    src.format = 'png'
+                    src.render(filepath, cleanup=True)
+                    
+                    graph_url = f"/static/{filename}.png"
+                    graph_markdown = f"\n\n### 🧬 親緣演化關係\n![演化圖]({graph_url})"
+            except Exception as e:
+                print(f"Auto-Graph Error: {e}")
 
-        # C. 畫演化分支圖
-        try:
-            print("Auto-generating evolution graph...")
-            dot_code = expert.generate_evolution_graph(ai_response_text)
-            if dot_code and "digraph" in dot_code:
-                filename = f"evo_{uuid.uuid4().hex}"
-                filepath = os.path.join('static', filename)
-                src = graphviz.Source(dot_code)
-                src.format = 'png'
-                src.render(filepath, cleanup=True)
-                
-                # 把演化圖「嵌入」在文字最後面
-                graph_url = f"/static/{filename}.png"
-                ai_response_text += f"\n\n### 🧬 親緣演化關係\n![演化圖]({graph_url})"
-        except Exception as e:
-            print(f"Auto-Graph Error: {e}")
+        # D. 組裝回答
+        
+        split_text = clean_text.split('\n', 1) # 切割第一行標題
+        
+        img_markdown = f"\n\n![Wiki Image]({found_img})" if found_img else ""
+        
+        if len(split_text) > 1:
+            # 情況 1：有標題 -> 標題 + 圖片 + 剩餘內文 + 演化圖
+            ai_response_text = f"{split_text[0]}{img_markdown}\n\n{split_text[1]}{graph_markdown}"
+        else:
+            # 情況 2：沒標題 -> 圖片 + 全文 + 演化圖
+            ai_response_text = f"{img_markdown}\n\n{clean_text}{graph_markdown}"
 
     elif intent == "GRAPH":
         # 使用者主動要求畫圖
@@ -177,8 +147,6 @@ def chat_api():
         "image_url": wiki_image_url,      # 包含 Wiki 圖 (如果有的話)
         "new_title": db[chat_id]["title"]
     })
-
-
 
 # 地圖 API 
 @app.route("/api/bury", methods=["POST"])
