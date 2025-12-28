@@ -23,7 +23,6 @@ class FossilExpert:
             "temperature": temperature
         }
         try:
-            # 設定 300 秒 timeout 避免運算過久中斷
             response = requests.post(self.api_url, headers=headers, json=data, timeout=300)
             if response.status_code == 200:
                 return response.json().get("message", {}).get("content", "")
@@ -140,7 +139,6 @@ class FossilExpert:
         clean_code = result.replace("```dot", "").replace("```", "").replace("json", "").strip()
         return clean_code
 
-# ... (原本的程式碼) ...
 
     def bury_fossil(self, lat, lng, era):
         """

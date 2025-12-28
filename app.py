@@ -4,13 +4,11 @@ import uuid
 import graphviz
 from flask import Flask, render_template, request, jsonify
 
-# ==========================================
-# 👇 這裡就是關鍵！匯入我們剛拆好的模組
-# ==========================================
-from config import SECRET_KEY  # 從 config 拿設定
-from backend import FossilExpert # 從 backend 拿 AI
-from database import load_db, save_db, get_last_ai_context # 從 database 拿資料庫功能
-from utils import get_wiki_image, extract_keyword # 從 utils 拿工具
+
+from config import SECRET_KEY 
+from backend import FossilExpert 
+from database import load_db, save_db, get_last_ai_context 
+from utils import get_wiki_image, extract_keyword 
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -18,9 +16,7 @@ app.secret_key = SECRET_KEY
 # 初始化 Expert (它會自己去 config 抓 Key)
 expert = FossilExpert()
 
-# ==========================================
-# 🌐 頁面路由
-# ==========================================
+# 頁面路由
 @app.route("/")
 def index(): return render_template("index.html")
 
@@ -30,9 +26,9 @@ def chat_page(): return render_template("chat.html")
 @app.route("/map")
 def map_page(): return render_template("map.html")
 
-# ==========================================
-# 💬 對話 API (這裡使用了 database 和 utils 的功能)
-# ==========================================
+
+# 對話 API，用 database 和 utils 
+
 @app.route("/api/chats", methods=["GET"])
 def get_chats():
     db = load_db()
@@ -167,7 +163,7 @@ def chat_api():
     # 4. 儲存與回傳
     user_msg = {'role': 'user', 'content': user_input}
     
-    # 存進資料庫 (為了讓歷史紀錄也有圖)
+    # 存進資料庫
     final_content_for_db = ai_response_text
     if wiki_image_url:
         final_content_for_db += f'\n\n![Wiki Image]({wiki_image_url})' 
@@ -184,9 +180,8 @@ def chat_api():
         "new_title": db[chat_id]["title"]
     })
 
-# ==========================================
-# 🌍 地圖 API (這些已經正常工作了)
-# ==========================================
+# 地圖 API 
+
 @app.route("/api/bury", methods=["POST"])
 def api_bury():
     data = request.json

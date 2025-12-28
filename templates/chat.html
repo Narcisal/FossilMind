@@ -132,7 +132,7 @@
             const avatarIcon = role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
             let content = isHtml ? text : text.replace(/\n/g, '<br>');
 
-            // ✅ 如果有圖片，就把它加到泡泡裡
+            // 如果有圖片，就把它加到泡泡裡
             if (imageUrl) {
                 content += `<img src="${imageUrl}" alt="Fossil or Graph">`;
             }
