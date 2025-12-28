@@ -127,9 +127,9 @@
             <div style="width: 1px; height: 20px; background: #ddd;"></div>
             <label><i class="fa-solid fa-hourglass-half"></i> 選擇地質代：</label>
             <select id="era-select">
-                <option value="Paleozoic">古生代 (Paleozoic) - 三葉蟲與巨蟲</option>
-                <option value="Mesozoic" selected>中生代 (Mesozoic) - 恐龍霸主</option>
-                <option value="Cenozoic">新生代 (Cenozoic) - 哺乳類與冰河</option>
+                <option value="Paleozoic">古生代 (Paleozoic)</option>
+                <option value="Mesozoic" selected>中生代 (Mesozoic)</option>
+                <option value="Cenozoic">新生代 (Cenozoic)</option>
             </select>
         </div>
         <div id="map"></div>
@@ -403,7 +403,7 @@
             triviaText.classList.remove('fade-out');
         }
 
-        // --- 點擊挖掘主邏輯 (修正後) ---
+        // --- 點擊挖掘主邏輯 ---
         map.on('click', async function(e) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
