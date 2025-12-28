@@ -1,17 +1,11 @@
 import requests
 import json
 import re
+from config import API_KEY, API_URL, MODEL_NAME 
 
-# =============================================================
-# 設定區
-# =============================================================
-DEFAULT_API_KEY = "3dfdd1df4ee04ed8bfc6ba4a68e3577ce2ce2f29690620ae800886061755cafc" 
-API_URL = "https://api-gateway.netdb.csie.ncku.edu.tw/api/chat"
-DEFAULT_MODEL = "gpt-oss:20b"
-# =============================================================
 
 class FossilExpert:
-    def __init__(self, api_key=DEFAULT_API_KEY, api_url=API_URL, model_name=DEFAULT_MODEL):
+    def __init__(self, api_key=API_KEY, api_url=API_URL, model_name=MODEL_NAME):
         self.api_key = api_key
         self.api_url = api_url
         self.model_name = model_name

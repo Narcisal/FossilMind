@@ -1,96 +1,25 @@
-import json
 import os
-import uuid
 import time
-import re
-import requests # 👈 新增這個來抓 Wiki 圖片
+import uuid
 import graphviz
 from flask import Flask, render_template, request, jsonify
-from backend import FossilExpert, API_URL
+
+# ==========================================
+# 👇 這裡就是關鍵！匯入我們剛拆好的模組
+# ==========================================
+from config import SECRET_KEY  # 從 config 拿設定
+from backend import FossilExpert # 從 backend 拿 AI
+from database import load_db, save_db, get_last_ai_context # 從 database 拿資料庫功能
+from utils import get_wiki_image, extract_keyword # 從 utils 拿工具
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = SECRET_KEY
+
+# 初始化 Expert (它會自己去 config 抓 Key)
+expert = FossilExpert()
 
 # ==========================================
-# 🔑 設定區
-# ==========================================
-MY_API_KEY = "3dfdd1df4ee04ed8bfc6ba4a68e3577ce2ce2f29690620ae800886061755cafc"
-expert = FossilExpert(MY_API_KEY, API_URL, "gpt-oss:20b")
-
-DB_FILE = "chats.json"
-
-# ==========================================
-# 🛠️ 輔助工具：Wiki 圖片抓取
-# ==========================================
-def get_wiki_image(query):
-    """搜尋維基百科並回傳第一張圖片的 URL"""
-    try:
-        # 1. 搜尋頁面 ID
-        search_url = "https://en.wikipedia.org/w/api.php"
-        search_params = {
-            "action": "query",
-            "list": "search",
-            "srsearch": query,
-            "format": "json",
-            "origin": "*"
-        }
-        search_res = requests.get(search_url, params=search_params, timeout=3).json()
-        
-        if not search_res.get("query", {}).get("search"):
-            return None # 沒找到
-        
-        title = search_res["query"]["search"][0]["title"]
-
-        # 2. 抓取該頁面的圖片
-        img_url = "https://en.wikipedia.org/w/api.php"
-        img_params = {
-            "action": "query",
-            "titles": title,
-            "prop": "pageimages",
-            "format": "json",
-            "pithumbsize": 500, # 圖片大小
-            "origin": "*"
-        }
-        img_res = requests.get(img_url, params=img_params, timeout=3).json()
-        
-        pages = img_res.get("query", {}).get("pages", {})
-        for page_id in pages:
-            if "thumbnail" in pages[page_id]:
-                return pages[page_id]["thumbnail"]["source"]
-                
-    except Exception as e:
-        print(f"Wiki Image Error: {e}")
-    
-    return None
-
-def extract_keyword(text):
-    """從 AI 回答中嘗試抓取 **粗體** 的關鍵字 (通常是學名)"""
-    match = re.search(r'\*\*(.*?)\*\*', text)
-    if match:
-        return match.group(1) # 回傳粗體內的字
-    return None
-
-# ==========================================
-# 💾 資料庫函式
-# ==========================================
-def load_db():
-    if not os.path.exists(DB_FILE): return {}
-    try:
-        with open(DB_FILE, "r", encoding="utf-8") as f: return json.load(f)
-    except: return {}
-
-def save_db(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-def get_last_ai_context(messages):
-    for msg in reversed(messages):
-        if msg["role"] == "assistant" and len(msg["content"]) > 20:
-            return msg["content"]
-    return ""
-
-# ==========================================
-# 🌐 路由
+# 🌐 頁面路由
 # ==========================================
 @app.route("/")
 def index(): return render_template("index.html")
@@ -102,7 +31,7 @@ def chat_page(): return render_template("chat.html")
 def map_page(): return render_template("map.html")
 
 # ==========================================
-# 💬 API: 聊天與核心邏輯
+# 💬 對話 API (這裡使用了 database 和 utils 的功能)
 # ==========================================
 @app.route("/api/chats", methods=["GET"])
 def get_chats():
@@ -140,7 +69,7 @@ def get_messages(chat_id):
     if chat_id in db: return jsonify(db[chat_id]["messages"])
     return jsonify([]), 404
 
-# --- 核心對話 API (包含圖片抓取邏輯) ---
+# --- 核心對話 API ---
 @app.route("/chat_api", methods=["POST"])
 def chat_api():
     data = request.json
@@ -149,6 +78,7 @@ def chat_api():
 
     if not user_input or not chat_id: return jsonify({"error": "No input"}), 400
 
+    # 1. 讀取資料庫
     db = load_db()
     if chat_id not in db:
         db[chat_id] = {"title": "新對話", "timestamp": time.time(), "messages": []}
@@ -157,33 +87,56 @@ def chat_api():
         db[chat_id]["title"] = user_input[:15] + "..."
     db[chat_id]["timestamp"] = time.time()
 
-    # 1. 判斷意圖
+    # 2. 判斷意圖
     intent = expert.determine_intent(user_input)
     print(f"User Intent: {intent}")
 
     ai_response_text = ""
-    image_url = None # 這將存放 Wiki 圖片 或 演化圖
+    main_image_url = None # 這是要傳給前端顯示在泡泡最下方的「主圖片」
 
-    # 2. 執行邏輯
+    # 3. 執行邏輯
     if intent == "IRRELEVANT":
         ai_response_text = "🦖 術業有專攻，FossilMind 無法回答與化石無關的問題喔！"
 
     elif intent == "IDENTIFY":
-        # 鑑定化石
+        # === 步驟 A: 鑑定化石 ===
         ai_response_text = expert.identify_fossil(user_input)
         
-        # 🔥 自動抓取 Wiki 圖片
-        # 嘗試從回答中抓取粗體字 (例如: **Haliotis rubra**)
+        # === 步驟 B: 找 Wiki 圖片 (設為主圖片) ===
         keyword = extract_keyword(ai_response_text)
-        if not keyword: 
-            # 如果沒抓到粗體，就用使用者的輸入當關鍵字試試看
-            keyword = user_input 
-        
+        if not keyword: keyword = user_input 
         print(f"Searching Wiki for: {keyword}")
-        image_url = get_wiki_image(keyword)
+        main_image_url = get_wiki_image(keyword)
+
+        # === 步驟 C: 自動畫演化圖 (這是新增的！) ===
+        # 我們嘗試生成演化圖，並用 Markdown 語法把它加到文字最後面
+        try:
+            print("Auto-generating evolution graph...")
+            dot_code = expert.generate_evolution_graph(ai_response_text)
+            
+            if dot_code and "digraph" in dot_code:
+                # 產生唯一的檔名
+                filename = f"evo_{uuid.uuid4().hex}"
+                filepath = os.path.join('static', filename)
+                
+                # 繪製圖片
+                src = graphviz.Source(dot_code)
+                src.format = 'png'
+                src.render(filepath, cleanup=True)
+                
+                # 生成 URL
+                graph_url = f"/static/{filename}.png"
+                
+                # 🔥 關鍵：把演化圖用 Markdown 語法接在回答後面
+                # 這樣前端就會顯示：[文字] + [演化圖] + [Wiki圖(在最下方)]
+                ai_response_text += f"\n\n### 🧬 親緣演化關係\n![演化圖]({graph_url})"
+                
+        except Exception as e:
+            print(f"Auto-Graph Error: {e}")
+            # 畫圖失敗就算了，不要讓整個程式當掉，也不用特別顯示錯誤訊息給使用者
 
     elif intent == "GRAPH":
-        # 繪製演化圖
+        # 主動要求畫圖的邏輯保持不變
         context = get_last_ai_context(db[chat_id]["messages"])
         if context:
             try:
@@ -194,10 +147,11 @@ def chat_api():
                     src = graphviz.Source(dot_code)
                     src.format = 'png'
                     src.render(filepath, cleanup=True)
-                    image_url = f"/static/{filename}.png" # ✅ 這裡產生的圖會傳回前端
+                    
+                    main_image_url = f"/static/{filename}.png"
                     ai_response_text = "這是根據目前的鑑定結果，所繪製的親緣演化關係圖："
                 else:
-                    ai_response_text = "抱歉，生成演化圖時發生錯誤，無法解析資料結構。"
+                    ai_response_text = "抱歉，生成演化圖時發生錯誤。"
             except Exception as e:
                 print(f"Graph Error: {e}")
                 ai_response_text = "系統繪圖模組發生異常 (Graphviz)。"
@@ -211,14 +165,13 @@ def chat_api():
         else:
             ai_response_text = "請先提供化石資訊，我才能為您詳細解釋。"
 
-    # 3. 儲存與回傳
+    # 4. 儲存與回傳
     user_msg = {'role': 'user', 'content': user_input}
     
-    # 如果有圖片 (Wiki圖 或 演化圖)，我們把它用 HTML 格式附加在訊息後面
-    # 這樣即使 reload 網頁，歷史紀錄裡也會有圖
+    # 存進資料庫的內容要包含 Markdown 圖片語法，這樣歷史紀錄才看得到
     final_content_for_db = ai_response_text
-    if image_url:
-        final_content_for_db += f'\n\n![Image]({image_url})' 
+    if main_image_url:
+        final_content_for_db += f'\n\n![Image]({main_image_url})' 
 
     ai_msg = {'role': 'assistant', 'content': final_content_for_db}
 
@@ -227,13 +180,13 @@ def chat_api():
     save_db(db)
 
     return jsonify({
-        "response": ai_response_text,
-        "image_url": image_url, # ✅ 確保這裡有傳回圖片網址
+        "response": ai_response_text,     # 這裡面可能已經包含演化圖的 Markdown 了
+        "image_url": main_image_url,      # 這是 Wiki 圖片 (會顯示在最後面)
         "new_title": db[chat_id]["title"]
     })
 
 # ==========================================
-# 🌍 地圖 API (保持不變)
+# 🌍 地圖 API (這些已經正常工作了)
 # ==========================================
 @app.route("/api/bury", methods=["POST"])
 def api_bury():
@@ -243,6 +196,7 @@ def api_bury():
         clean_json = raw_data.replace("```json", "").replace("```", "").strip()
         return jsonify({"success": True, "fossil": json.loads(clean_json)})
     except Exception as e:
+        print(f"Bury Error: {e}") # 加個 print 方便除錯
         return jsonify({"success": False, "error": str(e)})
 
 @app.route("/api/examine", methods=["POST"])
@@ -251,10 +205,11 @@ def api_examine():
     try:
         explanation = expert.dig_fossil(str(data.get("fossil_info")))
         return jsonify({"success": True, "explanation": explanation.replace("```html", "").replace("```", "").strip()})
-    except:
+    except Exception as e:
+        print(f"Examine Error: {e}")
         return jsonify({"success": False, "explanation": "通訊錯誤"})
 
 if __name__ == "__main__":
     if not os.path.exists('static'): os.makedirs('static')
-    print("🦕 FossilMind 伺服器啟動中...")
+    print("🦕 FossilMind 伺服器啟動中... (http://127.0.0.1:5000)")
     app.run(debug=True, port=5000)

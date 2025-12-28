@@ -127,5 +127,38 @@
                 "content": "<div class=\"message ai\">\n    <div class=\"bubble\" style=\"background: #fff3cd; color: #856404; border: 1px solid #ffeeba;\">\n        <strong>⚠️ 無法識別</strong><br>\n        FossilMind 專注於古生物與化石鑑定，無法回答關於其他領域（如電子、程式、數學）的問題。<br>\n        請上傳化石照片或描述特徵。\n    </div>\n</div>"
             }
         ]
+    },
+    "5a0d6959-2db7-4225-8657-3fef617f4d5e": {
+        "title": "新對話",
+        "timestamp": 1766941186.4171796,
+        "messages": []
+    },
+    "d0e1f91e-3e34-43b1-972c-db2936403fc4": {
+        "title": "跟人類小手臂一樣粗的腿骨 發現...",
+        "timestamp": 1766941664.8166666,
+        "messages": [
+            {
+                "role": "user",
+                "content": "跟人類小手臂一樣粗的腿骨 發現於菜寮溪"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>舊型象 (Stegodon sp.)</strong> 的化石！</p>\n\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 中</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Stegodon sp.</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Proboscidea > Stegodontidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>更新世晚期 (約 10萬年前至2萬年前)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>植食性</span></div>\n    </div>\n</div>\n<br>\n<p>此化石的腿骨呈現厚實的中段，顯示其屬於大型有蹄類，可能是古台灣 Pleistocene 時期的 Stegodon 族群。</p>"
+            }
+        ]
+    },
+    "c1e45903-97ea-4062-ae24-63d508f7c26d": {
+        "title": "跟人類小手臂一樣粗的腿骨 發現...",
+        "timestamp": 1766941897.6462264,
+        "messages": [
+            {
+                "role": "user",
+                "content": "跟人類小手臂一樣粗的腿骨 發現於菜寮溪"
+            },
+            {
+                "role": "assistant",
+                "content": "<p>這看起來非常像是<strong>古代巨鼠 (Palaeomys)</strong> 的化石！</p>\n<div class=\"fossil-card\">\n    <div class=\"fossil-header\">\n        <span>鑑定報告</span>\n        <span class=\"confidence-tag\">信心度: 中</span>\n    </div>\n    <div class=\"fossil-body\">\n        <div class=\"info-row\"><span class=\"info-label\">學名</span> <span>Palaeomys</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">分類</span> <span>Rodentia > †Palaeomyidae</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">年代</span> <span>Paleocene (Ypresian)</span></div>\n        <div class=\"info-row\"><span class=\"info-label\">食性</span> <span>雜食性</span></div>\n    </div>\n</div>\n<br>\n<p>此骨骼呈現粗壯的股骨，顯示該動物為大型齒類，生活於熱帶森林中，具備強壯的腿部肌肉以支撐其較大的體型。</p>\n\n### 🧬 親緣演化關係\n![演化圖](/static/evo_29def7448b9e4910b5337fb9764604ba.png)"
+            }
+        ]
     }
 }
