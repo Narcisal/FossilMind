@@ -3,6 +3,8 @@
 
 **FossilMind** 是一個結合大型語言模型 (LLM) 與視覺化工具的古生物 AI Agent。它不僅能透過自然語言鑑定化石，還能自動檢索維基百科圖片，並生成動態演化樹狀圖，旨在協助使用者探索地球的深層記憶。
 
+更多資訊，請參考該[簡報](https://www.canva.com/design/DAG815-GKS0/w-lTjrgIW-A2A3j1WYGJOw/edit?utm_content=DAG815-GKS0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+
 ##  Key Features
 
 1.  **化石鑑定**
@@ -62,3 +64,5 @@ You should see the following message indicating successful startup:
 ## Finite State Machine
 
 ![FossilMind FSM](static/FSM.png)
+
+
