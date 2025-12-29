@@ -37,13 +37,13 @@
         /* --- 右側資訊區 --- */
         #sidebar {
             flex: 1; background: #ffffff; border-left: 1px solid #e0e0e0;
-            display: flex; flex-direction: column; max-width: 420px; min-width: 350px;
+            display: flex; flex-direction: column; max-width: 600px; min-width: 450px;
             box-shadow: -5px 0 20px rgba(0,0,0,0.05); z-index: 1001;
             position: relative;
         }
         
         .sidebar-header { padding: 25px; background: linear-gradient(135deg, #2c3e50, #4a6fa5); color: white; text-align: center; }
-        .sidebar-content { padding: 25px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
+        .sidebar-content { padding: 25px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; font-size: 1.1rem;}
         
         /* 狀態容器通用設定 */
         .status-container { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.5s; }
@@ -57,8 +57,8 @@
         .loading-state { display: none; width: 100%; text-align: center; padding-top: 30px; }
         .spinner-box { margin-bottom: 20px; }
         .spinner-icon { font-size: 3.5rem; color: #4a6fa5; }
-        .status-text { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; min-height: 1.5em; }
-        .sub-status-text { font-size: 0.95rem; color: #7f8c8d; margin-bottom: 25px; min-height: 1.5em; }
+        .status-text { font-size: 1.6rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; min-height: 1.5em; }
+        .sub-status-text { font-size: 1.1rem; color: #7f8c8d; margin-bottom: 25px; min-height: 1.5em; }
         .timer-badge {
             display: inline-block; background: #eef4fc; color: #4a6fa5; padding: 8px 20px;
             border-radius: 30px; font-family: 'Roboto Mono', monospace;
@@ -70,7 +70,7 @@
         
         /* 化石圖片區塊 */
         .fossil-image-container {
-            width: 100%; height: 200px; background: #eee; border-radius: 12px;
+            width: 100%; height: 300px; background: #eee; border-radius: 12px;
             margin-bottom: 20px; overflow: hidden; position: relative;
             display: flex; align-items: center; justify-content: center;
         }
@@ -78,11 +78,11 @@
         .fossil-image-container img:hover { transform: scale(1.05); }
         .no-image-placeholder { color: #aaa; font-size: 3rem; }
 
-        .fossil-name { font-size: 2rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; line-height: 1.2; }
+        .fossil-name { font-size: 2.5rem; font-weight: 700; color: #2c3e50; margin-bottom: 5px; line-height: 1.2; }
         .fossil-latin { font-style: italic; color: #7f8c8d; margin-bottom: 20px; font-family: 'Times New Roman', serif; font-size: 1.1rem; }
         .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
         .tag { background: #e3effd; color: #4a6fa5; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
-        .ai-comment { background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #4a6fa5; line-height: 1.8; color: #444; font-size: 0.95rem; }
+        .ai-comment { background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #4a6fa5; line-height: 1.8; color: #444; font-size: 1.15rem; }
         .ai-comment h3 { margin-top: 0; color: #2c3e50; }
 
         /* 定位資訊卡片 */
@@ -101,15 +101,26 @@
         .trivia-card {
             background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
             color: #795548; padding: 25px 20px; border-radius: 12px; border: 1px solid #ffeeba;
-            font-size: 1.05rem; margin-top: 50px; position: relative; overflow: hidden; 
+            font-size: 1.25rem; margin-top: 50px; position: relative; overflow: hidden; 
             box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2); min-height: 120px;
             display: flex; flex-direction: column; justify-content: center; text-align: left;
         }
         .trivia-card::before {
-            content: "Did you know?"; position: absolute; top: 50%; right: 15px;
-            transform: translateY(-50%) rotate(-5deg); font-size: 2.8rem; opacity: 0.1;
-            color: #000; font-weight: 900; font-family: 'Times New Roman', serif;
-            font-style: italic; pointer-events: none; white-space: nowrap;
+            content: "Did you know?"; 
+            position: absolute; 
+            
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-5deg);
+            
+            font-size: 3.5rem;
+            opacity: 0.08;     
+            color: #000; 
+            font-weight: 900; 
+            font-family: 'Times New Roman', serif;
+            font-style: italic; 
+            pointer-events: none; 
+            white-space: nowrap;
         }
         .trivia-title { font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; color: #d35400; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 2; }
         #trivia-text { position: relative; z-index: 2; line-height: 1.6; font-weight: 500; opacity: 1; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -441,7 +452,7 @@
 
             try {
                 // === 階段一：埋藏 (AI #1) ===
-                mainStatus.innerText = "AI #1: Timekeeper";
+                mainStatus.innerText = "Timekeeper";
                 subStatus.innerText = "正在模擬古代地質與生態...";
                 mainStatus.style.color = "#4a6fa5";
                 
@@ -459,7 +470,7 @@
                 if (data1.fossil.terrain) locTerrain.innerText = data1.fossil.terrain;
 
                 // === 階段二：鑑定 (AI #2) ===
-                mainStatus.innerText = "AI #2: Paleontologist";
+                mainStatus.innerText = "Paleontologist";
                 subStatus.innerText = "正在撰寫地質探勘報告...";
                 mainStatus.style.color = "#e67e22";
                 
@@ -474,14 +485,27 @@
                 let imageUrl = "";
                 if (data1.fossil.found) {
                     try {
-                        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${data1.fossil.name_latin}&prop=pageimages&format=json&pithumbsize=500&origin=*`);
+                        // 留屬名
+                        let cleanName = data1.fossil.name_latin.replace(/\s+sp\.?$/i, "").replace(/\s+spp\.?$/i, "").trim();
+                        console.log(`正在搜尋 Wiki 圖片: 原名[${data1.fossil.name_latin}] -> 清理後[${cleanName}]`);
+
+                        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${cleanName}&prop=pageimages&format=json&pithumbsize=500&redirects=1&origin=*`);
                         const wikiData = await wikiRes.json();
-                        const pages = wikiData.query.pages;
-                        const pageId = Object.keys(pages)[0];
-                        if (pages[pageId].thumbnail) {
-                            imageUrl = pages[pageId].thumbnail.source;
+                        
+                        if (wikiData.query && wikiData.query.pages) {
+                            const pages = wikiData.query.pages;
+                            const pageId = Object.keys(pages)[0];
+                            
+                            if (pageId !== "-1" && pages[pageId].thumbnail) {
+                                imageUrl = pages[pageId].thumbnail.source;
+                                console.log("圖片獲取成功:", imageUrl);
+                            } else {
+                                console.log("Wiki 有條目但無縮圖，或查無此人");
+                            }
                         }
-                    } catch (e) { console.log("Wiki Image failed", e); }
+                    } catch (e) { 
+                        console.log("Wiki Image fetch failed", e); 
+                    }
                 }
 
                 // === 顯示結果 ===
