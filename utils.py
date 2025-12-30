@@ -1,4 +1,3 @@
-# utils.py (終極寬容版)
 import requests
 import re
 
