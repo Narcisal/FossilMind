@@ -45,6 +45,14 @@ def test_stream_identify_intent_streams_chunks_then_final(monkeypatch):
         lambda desc: iter(["這是", "三葉蟲", "[[Wiki: Trilobite]]"]),
     )
     monkeypatch.setattr(app_module, "get_wiki_image", lambda q: None)
+    # 回應裡有 [[Wiki: Trilobite]]，extract_keyword 會抓到 keyword，
+    # 程式碼就會呼叫 generate_evolution_graph 畫演化圖——這裡沒 mock 掉的話
+    # 會真的打一次網路請求到 LLM API，讓這個「單元測試」變成會受網路環境影響。
+    monkeypatch.setattr(
+        app_module.expert,
+        "generate_evolution_graph",
+        lambda prompt: "",
+    )
 
     res = client.post("/chat_api_stream", json={"message": "黑色有節的石頭", "chat_id": "t2"})
     events = parse_sse(res.get_data(as_text=True))
