@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependency (Graphviz)
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Install Python dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Check that the app imports cleanly
+        env:
+          # 純粹讓 config.py 的檢查通過，不會真的打任何 API
+          FOSSILMIND_API_KEY: ci-placeholder-key
+        run: python -c "import app"
+
+      - name: Run tests
+        env:
+          FOSSILMIND_API_KEY: ci-placeholder-key
+        run: pytest tests/ -v

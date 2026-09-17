@@ -24,9 +24,12 @@
 | `backend.py` | **Model**: Encapsulates LLM logic, Prompt Engineering, and intent classification |
 | `utils.py` | **Tools**: Handles Wiki API search, Regex keyword extraction, and tag cleaning |
 | `database.py` | **Data**: Manages JSON conversation history read/write operations |
-| `config.py` | **Config**: Stores API Keys and global configuration |
+| `config.py` | **Config**: Reads API key / model settings from environment variables (`.env`) |
 | `templates/` | Frontend HTML (Chat UI & Leaflet Map) |
 | `static/` | Stores pictures |
+| `tests/` | Pytest suite — LLM calls are mocked, so running tests never costs API credits |
+| `.github/workflows/ci.yml` | GitHub Actions: import check + test suite on every push |
+| `Dockerfile` | Container build (includes the system-level Graphviz dependency) |
 
 ---
 
@@ -52,6 +55,15 @@
 * Step 2: Install Python packages
 `pip install -r requirements.txt`
 
+* Step 3: Configure your API key
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in `FOSSILMIND_API_KEY` with your own key. The app will
+refuse to start without one — it never falls back to a hardcoded key.
+
 ### 4. Run Server
 Execute the following command to start the Flask server:
 `python app.py`
@@ -60,6 +72,28 @@ You should see the following message indicating successful startup:
 
 `FossilMind 伺服器啟動中... (http://127.0.0.1:5000)`
 
+By default the server runs with `debug=False`. For local development with
+verbose error pages, set `FLASK_DEBUG=true` in `.env` — never do this in a
+deployed environment.
+
+### 5. Running Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+All LLM calls are mocked in the test suite, so this doesn't need a real API
+key or hit any network requests.
+
+### 6. Run with Docker (alternative to steps 1–4)
+
+```bash
+docker build -t fossilmind .
+docker run -p 5000:5000 --env-file .env fossilmind
+```
+
+The image bundles Graphviz, so there's nothing extra to install on the host.
 
 ## Finite State Machine
 

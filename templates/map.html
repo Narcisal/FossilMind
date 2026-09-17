@@ -195,9 +195,21 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script>
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // 只允許 http(s) 或站內相對路徑的圖片網址，擋掉 javascript: 之類的注入
+        function isSafeImageUrl(url) {
+            return /^(https?:)?\/\//.test(url) || url.startsWith('/');
+        }
+
         // 1. 初始化地圖
-        const map = L.map('map').setView([20, 0], 2); 
+        const map = L.map('map').setView([20, 0], 2);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -515,24 +527,33 @@
                 resultArea.style.display = 'block';
 
                 const fossil = data1.fossil;
-                
+
+                // fossil.* 與 data2.explanation 都是 LLM 產生的內容，視為不可信任：
+                // 純文字欄位一律 escape，explanation 允許 HTML 排版但要先過 DOMPurify 過濾
+                const safeImageUrl = imageUrl && isSafeImageUrl(imageUrl) ? escapeHtml(imageUrl) : null;
+                const safeEra = escapeHtml(era);
+                const safeEnvironment = escapeHtml(fossil.environment || "");
+                const safeNameZh = escapeHtml(fossil.name_zh || "");
+                const safeNameLatin = escapeHtml(fossil.name_latin || "");
+                const safeExplanation = DOMPurify.sanitize(data2.explanation || "");
+
                 // 根據 found (是否挖到) 顯示不同 UI
                 if (fossil.found) {
                     // --- 情況 A: 成功挖到 ---
-                    const imageHtml = imageUrl 
-                        ? `<div class="fossil-image-container"><img src="${imageUrl}" alt="${fossil.name_latin}"></div>`
+                    const imageHtml = safeImageUrl
+                        ? `<div class="fossil-image-container"><img src="${safeImageUrl}" alt="${safeNameLatin}"></div>`
                         : `<div class="fossil-image-container"><i class="fa-solid fa-bone no-image-placeholder"></i></div>`;
 
                     resultArea.innerHTML = `
                         ${imageHtml}
                         <div class="tag-row">
                             <span class="tag" style="background:#27ae60; color:white;">🎉 挖掘成功</span>
-                            <span class="tag" style="background:#f39c12; color:white;">${era}</span>
-                            <span class="tag">${fossil.environment}</span>
+                            <span class="tag" style="background:#f39c12; color:white;">${safeEra}</span>
+                            <span class="tag">${safeEnvironment}</span>
                         </div>
-                        <div class="fossil-name">${fossil.name_zh}</div>
-                        <div class="fossil-latin">${fossil.name_latin}</div>
-                        <div class="ai-comment">${data2.explanation}</div>
+                        <div class="fossil-name">${safeNameZh}</div>
+                        <div class="fossil-latin">${safeNameLatin}</div>
+                        <div class="ai-comment">${safeExplanation}</div>
                     `;
                 } else {
                     // --- 情況 B: 沒挖到 (地質限制) ---
@@ -543,7 +564,7 @@
                             <p style="color: #7f8c8d;">地質年代不符或環境不適合</p>
                         </div>
                         <div class="ai-comment" style="border-left-color: #e74c3c;">
-                            ${data2.explanation}
+                            ${safeExplanation}
                         </div>
                     `;
                 }

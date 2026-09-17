@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 
     <style>
         :root {
@@ -59,8 +60,28 @@
             <i class="fa-solid fa-bone" style="color: var(--primary-color);"></i>
             FossilMind <span style="font-size: 0.8rem; color: #888; font-weight: 400; margin-left: 5px;">| AI Agent Laboratory</span>
         </div>
-        <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <button type="button" id="api-key-toggle-btn" class="back-btn" style="background: none; border: none; cursor: pointer; font: inherit;">
+                <i class="fa-solid fa-key"></i> API 金鑰設定
+            </button>
+            <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
+        </div>
     </header>
+
+    <div id="api-key-panel" hidden style="max-width: 900px; margin: 0 auto; padding: 12px 20px; background: #fffbe6; border-bottom: 1px solid #f0e0a0; font-size: 0.85rem; color: #6c5a1e;">
+        <p style="margin: 0 0 8px;">
+            預設會用伺服器共用的金鑰（如果有設定的話）。你也可以貼上自己的 API 金鑰，
+            這樣這次對話就會用你自己的額度，不會動到伺服器的用量。
+            金鑰只存在<strong>你這個瀏覽器分頁</strong>（關閉分頁就會清掉），
+            不會被送去存到伺服器或任何紀錄檔裡。
+        </p>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <input type="password" id="user-api-key-input" placeholder="貼上你自己的 API 金鑰（選填）" style="flex: 1; min-width: 220px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;">
+            <button type="button" id="api-key-save-btn" class="icon-btn" style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--primary-color); background: var(--primary-color); color: white; cursor: pointer; white-space: nowrap;">儲存</button>
+            <button type="button" id="api-key-clear-btn" style="padding: 6px 14px; border-radius: 6px; border: 1px solid #ccc; background: white; cursor: pointer; white-space: nowrap;">清除</button>
+            <span id="api-key-status" style="color: #2c7a4b;"></span>
+        </div>
+    </div>
 
     <div class="chat-container" id="chat-box">
         <div class="message ai">
@@ -91,6 +112,53 @@
         // 初始化 Session
         let currentChatId = 'session_' + Date.now();
         console.log("Current Chat ID:", currentChatId);
+
+        // --- BYOK：使用者自己的 API 金鑰 ---
+        // 只存在 sessionStorage（分頁關掉就清掉），不寫進 localStorage、
+        // 不會被記錄，只有在真的送出訊息時才會被讀出來夾進 request body。
+        const USER_KEY_STORAGE_KEY = 'fossilmind_user_api_key';
+
+        const apiKeyToggleBtn = document.getElementById('api-key-toggle-btn');
+        const apiKeyPanel = document.getElementById('api-key-panel');
+        const apiKeyInput = document.getElementById('user-api-key-input');
+        const apiKeySaveBtn = document.getElementById('api-key-save-btn');
+        const apiKeyClearBtn = document.getElementById('api-key-clear-btn');
+        const apiKeyStatus = document.getElementById('api-key-status');
+
+        function getUserApiKey() {
+            return sessionStorage.getItem(USER_KEY_STORAGE_KEY) || '';
+        }
+
+        function refreshApiKeyStatus() {
+            apiKeyStatus.textContent = getUserApiKey() ? '✓ 目前使用你自己的金鑰' : '';
+        }
+
+        apiKeyToggleBtn.addEventListener('click', () => {
+            apiKeyPanel.hidden = !apiKeyPanel.hidden;
+            if (!apiKeyPanel.hidden) {
+                apiKeyInput.value = getUserApiKey();
+                refreshApiKeyStatus();
+            }
+        });
+
+        apiKeySaveBtn.addEventListener('click', () => {
+            const value = apiKeyInput.value.trim();
+            if (value) {
+                sessionStorage.setItem(USER_KEY_STORAGE_KEY, value);
+            } else {
+                sessionStorage.removeItem(USER_KEY_STORAGE_KEY);
+            }
+            refreshApiKeyStatus();
+        });
+
+        apiKeyClearBtn.addEventListener('click', () => {
+            sessionStorage.removeItem(USER_KEY_STORAGE_KEY);
+            apiKeyInput.value = '';
+            refreshApiKeyStatus();
+        });
+
+        refreshApiKeyStatus();
+
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;
@@ -99,42 +167,144 @@
             userInput.value = '';
             sendBtn.disabled = true;
 
-            const loadingId = appendLoadingState("FossilExpert 思考中...");
+            const stream = createStreamingBubble();
+            let rawText = '';
+            let finalized = false;
+            let pendingImageUrl = null;
 
             try {
-                const res = await fetch('/chat_api', {
+                const res = await fetch('/chat_api_stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: currentChatId, message: text })
+                    body: JSON.stringify({
+                        chat_id: currentChatId,
+                        message: text,
+                        user_api_key: getUserApiKey() || undefined
+                    })
                 });
-                const data = await res.json();
-                removeMessage(loadingId);
-                
-                if (data.error) throw new Error(data.error);
 
-                // ✅ 這裡會同時顯示文字和圖片 (如果有 image_url 的話)
-                appendMessage('ai', marked.parse(data.response), true, data.image_url);
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || `HTTP ${res.status}`);
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    let sepIndex;
+                    while ((sepIndex = buffer.indexOf('\n\n')) !== -1) {
+                        const block = buffer.slice(0, sepIndex);
+                        buffer = buffer.slice(sepIndex + 2);
+                        if (!block.trim()) continue;
+
+                        const [eventLine, dataLine] = block.split('\n');
+                        const eventName = eventLine.replace('event: ', '');
+                        const payload = JSON.parse(dataLine.replace('data: ', ''));
+
+                        if (eventName === 'chunk') {
+                            rawText += payload.text;
+                            updateStreamingBubble(stream, rawText);
+                        } else if (eventName === 'final') {
+                            // 收到排版好的最終定稿版本（含正確的圖片/演化圖位置），整段換掉逐字顯示的內容
+                            rawText = payload.text;
+                            finalizeStreamingBubble(stream, marked.parse(rawText));
+                            finalized = true;
+                        } else if (eventName === 'done') {
+                            if (payload.image_url && isSafeImageUrl(payload.image_url)) {
+                                // 先記住，等文字定稿（innerHTML 會整個被換掉）之後再附加，
+                                // 不然如果 done 比 fallback finalize 先處理，圖片會被蓋掉
+                                pendingImageUrl = payload.image_url;
+                            }
+                        }
+                    }
+                }
+
+                // IRRELEVANT / GRAPH / EXPLAIN 分支只會送 chunk、不會送 final，
+                // 這裡用累積到的文字做最後一次 markdown + sanitize
+                if (!finalized) {
+                    finalizeStreamingBubble(stream, marked.parse(rawText));
+                }
+
+                // 圖片一定要在文字定稿之後才附加，避免被 finalize 的 innerHTML 覆寫掉
+                if (pendingImageUrl) {
+                    appendImageToStreamingBubble(stream, pendingImageUrl);
+                }
 
             } catch (err) {
                 console.error(err);
-                removeMessage(loadingId);
-                appendMessage('ai', `⚠️ 發生錯誤：${err.message}`, false);
+                finalizeStreamingBubble(stream, escapeHtml(`⚠️ 發生錯誤：${err.message}`));
             } finally {
                 sendBtn.disabled = false;
                 userInput.focus();
             }
         }
 
+        // 建立一個空的 AI 訊息泡泡，回傳其中放文字內容的節點，之後逐字塞內容進去
+        function createStreamingBubble() {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai';
+            msgDiv.innerHTML = `
+                <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                <div class="bubble"><span class="stream-text"></span></div>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv.querySelector('.stream-text');
+        }
+
+        // 串流階段：原始文字可能還帶著 [[Wiki: ...]] 標記或不完整的 markdown，
+        // 這裡故意不跑 marked/DOMPurify（成本高、partial markdown 容易解析壞掉），
+        // 用 textContent 讓瀏覽器自動跳脫，單純求「文字有在即時跑出來」的體感
+        function updateStreamingBubble(streamTextEl, rawText) {
+            streamTextEl.textContent = rawText;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 串流結束：換成正式渲染（markdown 解析 + DOMPurify 過濾）的版本
+        function finalizeStreamingBubble(streamTextEl, sanitizedHtml) {
+            streamTextEl.innerHTML = DOMPurify.sanitize(sanitizedHtml);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendImageToStreamingBubble(streamTextEl, imageUrl) {
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Fossil or Graph';
+            streamTextEl.appendChild(img);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // 只允許 http(s) 或站內相對路徑的圖片網址，擋掉 javascript: 之類的注入
+        function isSafeImageUrl(url) {
+            return /^(https?:)?\/\//.test(url) || url.startsWith('/');
+        }
+
         function appendMessage(role, text, isHtml = false, imageUrl = null) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${role}`;
-            
-            const avatarIcon = role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
-            let content = isHtml ? text : text.replace(/\n/g, '<br>');
 
-            // 如果有圖片，就把它加到泡泡裡
-            if (imageUrl) {
-                content += `<img src="${imageUrl}" alt="Fossil or Graph">`;
+            const avatarIcon = role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
+            // isHtml=true 的內容一律來自 LLM，用 DOMPurify 過濾掉 script/事件屬性等危險內容
+            // isHtml=false（使用者輸入、系統訊息）先 escape 再處理換行，避免使用者自己打的內容被當成 HTML 解析
+            let content = isHtml
+                ? DOMPurify.sanitize(text)
+                : escapeHtml(text).replace(/\n/g, '<br>');
+
+            // 如果有圖片，就把它加到泡泡裡（驗證網址協定，避免 javascript: 之類的注入）
+            if (imageUrl && isSafeImageUrl(imageUrl)) {
+                content += `<img src="${escapeHtml(imageUrl)}" alt="Fossil or Graph">`;
             }
 
             msgDiv.innerHTML = `

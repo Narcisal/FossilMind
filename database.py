@@ -1,12 +1,14 @@
 import json
 import os
-from config import DB_FILE  
+from config import DB_FILE
 
 def load_db():
     if not os.path.exists(DB_FILE): return {}
     try:
         with open(DB_FILE, "r", encoding="utf-8") as f: return json.load(f)
-    except: return {}
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"⚠️ [Database] Failed to load {DB_FILE}, starting with empty state: {e}")
+        return {}
 
 def save_db(data):
     with open(DB_FILE, "w", encoding="utf-8") as f:

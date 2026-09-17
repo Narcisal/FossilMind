@@ -31,6 +31,45 @@ class FossilExpert:
         except Exception as e:
             return f"Connection Error: {str(e)}"
 
+    def _call_llm_stream(self, prompt, temperature=0.7):
+        """
+        內部函式：streaming 版本，逐段 yield 文字片段。
+        NOTE: gateway 是 Ollama 相容格式（model/messages/stream 欄位、非 stream 時回傳
+        {"message": {"content": ...}}），這裡假設 stream=True 時回傳逐行 NDJSON，
+        每行是 {"message": {"content": "..."}, "done": bool}，這是 Ollama 的標準行為。
+        因為目前沒有可用的金鑰，這個假設還沒有實際對真正的 gateway 驗證過，
+        如果實測發現格式不同，只要改這個函式內部的解析邏輯即可，呼叫端不用動。
+        """
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": True,
+            "temperature": temperature
+        }
+        try:
+            with requests.post(self.api_url, headers=headers, json=data, timeout=300, stream=True) as response:
+                if response.status_code != 200:
+                    yield f"Error: {response.status_code} - {response.text}"
+                    return
+                for line in response.iter_lines(decode_unicode=True):
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    piece = chunk.get("message", {}).get("content", "")
+                    if piece:
+                        yield piece
+                    if chunk.get("done"):
+                        break
+        except Exception as e:
+            yield f"Connection Error: {str(e)}"
+
     def determine_intent(self, user_input):
         """
         Step 1: 感知層 (Perception)
@@ -64,11 +103,8 @@ class FossilExpert:
         if "IRRELEVANT" in intent: return "IRRELEVANT"
         return "IDENTIFY"
 
-    def identify_fossil(self, description):
-        """
-        Step 2: 驗證與鑑定層 (Verification) 
-        """
-        prompt = f"""
+    def _identify_fossil_prompt(self, description):
+        return f"""
         你是一位極度嚴謹的古生物學家。使用者輸入了："{description}"
         
         【安全防護機制】
@@ -117,17 +153,30 @@ class FossilExpert:
         <br>
         <p>[簡短特徵描述]。</p>
         """
-        return self._call_llm(prompt)
 
-    def explain_reasoning(self, context, question):
-        """Step 3: 推理層 (Reasoning)"""
-        prompt = f"""
+    def identify_fossil(self, description):
+        """Step 2: 驗證與鑑定層 (Verification)"""
+        return self._call_llm(self._identify_fossil_prompt(description))
+
+    def identify_fossil_stream(self, description):
+        """Step 2 的 streaming 版本，逐段回傳文字。"""
+        yield from self._call_llm_stream(self._identify_fossil_prompt(description))
+
+    def _explain_reasoning_prompt(self, context, question):
+        return f"""
         你是一位極度嚴謹的古生物學家。
         【前情提要】我們剛剛鑑定的化石是：{context}
         【使用者問題】{question}
         請回答問題，若問題與該化石無關，請禮貌引導回化石話題。
         """
-        return self._call_llm(prompt)
+
+    def explain_reasoning(self, context, question):
+        """Step 3: 推理層 (Reasoning)"""
+        return self._call_llm(self._explain_reasoning_prompt(context, question))
+
+    def explain_reasoning_stream(self, context, question):
+        """Step 3 的 streaming 版本，逐段回傳文字。"""
+        yield from self._call_llm_stream(self._explain_reasoning_prompt(context, question))
 
     def generate_evolution_graph(self, context_text):
         """Step 4: 視覺化層 (Visualization)"""

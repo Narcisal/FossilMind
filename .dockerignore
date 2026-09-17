@@ -1,0 +1,9 @@
+.git
+.github
+__pycache__
+*.pyc
+.env
+chats.json
+tests
+.pytest_cache
+static/evo_*.png
