@@ -33,4 +33,7 @@ jobs:
       - name: Run tests
         env:
           FOSSILMIND_API_KEY: ci-placeholder-key
-        run: pytest tests/ -v
+        # 用 `python -m pytest`，不要直接叫 `pytest`：前者會自動把目前資料夾
+        # （app.py / config.py 等檔案所在位置）加進 sys.path，後者不會，
+        # 會導致 tests/ 底下 `import app`、`import config` 全部失敗。
+        run: python -m pytest tests/ -v

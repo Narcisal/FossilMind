@@ -80,7 +80,7 @@ deployed environment.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 All LLM calls are mocked in the test suite, so this doesn't need a real API
