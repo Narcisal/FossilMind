@@ -3,7 +3,7 @@ import re
 
 def get_wiki_image(query):
     """搜尋維基百科並回傳第一張圖片的 URL"""
-    print(f"🔎 Wiki Searching for: [{query}]...") # Debug 訊息
+    print(f"[Wiki] Searching for: [{query}]...") # Debug 訊息
     try:
         # 偽裝成瀏覽器，避免被擋
         headers = {
@@ -23,11 +23,11 @@ def get_wiki_image(query):
         data = res.json()
         
         if not data.get("query", {}).get("search"):
-            print(f"❌ Wiki Search returned no results for '{query}'")
+            print(f"[Wiki] Search returned no results for '{query}'")
             return None 
         
         title = data["query"]["search"][0]["title"]
-        print(f"✅ Wiki Found Page: {title}")
+        print(f"[Wiki] Found page: {title}")
 
         # 2. 抓圖片
         img_url = "https://en.wikipedia.org/w/api.php"
@@ -45,11 +45,11 @@ def get_wiki_image(query):
         for page_id in pages:
             if "thumbnail" in pages[page_id]:
                 img_src = pages[page_id]["thumbnail"]["source"]
-                print(f"📸 Wiki Image Found: {img_src}")
+                print(f"[Wiki] Image found: {img_src}")
                 return img_src
                 
     except Exception as e:
-        print(f"⚠️ Wiki Error: {e}")
+        print(f"[Wiki] Error: {e}")
     
     return None
 
