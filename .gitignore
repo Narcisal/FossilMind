@@ -4,5 +4,6 @@ __pycache__/
 .env
 
 chats.json
+chats.db*
 
 static/evo_*.png

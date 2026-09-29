@@ -12,5 +12,7 @@ if not API_KEY:
         "缺少 FOSSILMIND_API_KEY。請複製 .env.example 為 .env，並填入你自己的金鑰。"
     )
 
-DB_FILE = "chats.json"
+# Docker 部署時可以把這個路徑指到掛載的 volume，容器重建後對話紀錄才不會消失
+DB_FILE = os.getenv("FOSSILMIND_DB_FILE", "chats.db")
+LEGACY_JSON_FILE = "chats.json"  # 舊版的對話紀錄，資料庫是空的時候會自動匯入
 SECRET_KEY = os.urandom(24)

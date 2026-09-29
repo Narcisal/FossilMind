@@ -197,6 +197,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script>
+        // BYOK：沿用使用者在聊天頁設定的金鑰（同一個分頁的 sessionStorage），沒有設定就用伺服器的共用金鑰
+        function getUserApiKey() {
+            return sessionStorage.getItem('fossilmind_user_api_key') || '';
+        }
+
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str;
@@ -471,7 +476,7 @@
                 const res1 = await fetch('/api/bury', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lat, lng, era })
+                    body: JSON.stringify({ lat, lng, era, user_api_key: getUserApiKey() || undefined })
                 });
                 const data1 = await res1.json();
                 
@@ -489,7 +494,7 @@
                 const res2 = await fetch('/api/examine', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fossil_info: data1.fossil })
+                    body: JSON.stringify({ fossil_info: data1.fossil, user_api_key: getUserApiKey() || undefined })
                 });
                 const data2 = await res2.json();
 

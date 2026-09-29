@@ -4,6 +4,7 @@ __pycache__
 *.pyc
 .env
 chats.json
+chats.db*
 tests
 .pytest_cache
 static/evo_*.png

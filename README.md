@@ -24,8 +24,8 @@ For more details, see the [presentation slides](https://www.canva.com/design/DAG
 | `app.py` | **Controller**: Handles Flask routing, image assembly, and response logic |
 | `backend.py` | **Model**: Encapsulates LLM calls, prompt engineering, and intent classification |
 | `utils.py` | **Tools**: Handles Wikipedia API search, regex keyword extraction, and tag cleanup |
-| `database.py` | **Data**: Reads and writes conversation history stored as JSON |
-| `config.py` | **Config**: Reads the API key and model settings from environment variables (`.env`) |
+| `database.py` | **Data**: Stores conversation history and generated phylogenetic trees in SQLite |
+| `config.py` | **Config**: Reads the API key, model, and database settings from environment variables (`.env`) |
 | `templates/` | Frontend HTML (chat UI and Leaflet map) |
 | `static/` | Static images |
 | `tests/` | Pytest suite; LLM calls are mocked, so running tests never consumes API credits |
@@ -100,6 +100,14 @@ docker run -p 5000:5000 --env-file .env fossilmind
 ```
 
 The image bundles Graphviz, so nothing else needs to be installed on the host.
+
+Conversation history is stored in a SQLite database inside the container and is lost when the container is removed. To keep it, mount a volume and point `FOSSILMIND_DB_FILE` at it:
+
+```bash
+docker run -p 5000:5000 --env-file .env -v fossilmind-data:/data -e FOSSILMIND_DB_FILE=/data/chats.db fossilmind
+```
+
+When upgrading from an older version that stored history in `chats.json`, the file is imported automatically the first time the application starts with an empty database.
 
 ## Finite State Machine
 
