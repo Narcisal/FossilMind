@@ -38,6 +38,13 @@
         /* ✅ 圖片樣式：不管是 Wiki 還是 演化圖，都套用這個 */
         .bubble img { max-width: 100%; border-radius: 8px; margin-top: 15px; border: 1px solid #ddd; display: block; }
 
+        /* 鑑定結果卡片（class 名稱對應 backend.py 鑑定 prompt 要求 LLM 輸出的 HTML） */
+        .fossil-card { background: white; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .fossil-header { background: #f8f9fa; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .fossil-body { padding: 15px; font-size: 0.95rem; }
+        .info-row { display: flex; margin-bottom: 8px; }
+        .info-label { width: 80px; flex-shrink: 0; color: #888; font-weight: 500; }
+        .confidence-tag { background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
         .agent-status { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--primary-color); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; background: #eef4fc; padding: 4px 10px; border-radius: 4px; width: fit-content; }
 
         .input-area { background: white; padding: 20px; box-shadow: 0 -2px 20px rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: center; }
