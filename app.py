@@ -1,14 +1,16 @@
 import os
+import re
 import uuid
 import json
 import graphviz
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context, abort
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context, abort, redirect, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from config import SECRET_KEY
+from config import SECRET_KEY, API_KEY, PROVIDERS, DEFAULT_PROVIDER
 from backend import FossilExpert
 import database
+import llm_settings
 from utils import get_wiki_image, extract_keyword, clean_ai_response
 
 app = Flask(__name__)
@@ -17,18 +19,100 @@ app.secret_key = SECRET_KEY
 # 每個 LLM 呼叫都有成本，限制單一來源的呼叫頻率，避免額度被打爆
 limiter = Limiter(get_remote_address, app=app, default_limits=["60 per hour"])
 
-expert = FossilExpert()
+# AI 服務：.env 有設金鑰就直接用；沒有的話，等使用者在首頁的設定視窗填好（存在 llm_settings.json）
+expert = FossilExpert() if API_KEY else None
 database.init_db()
+
+NOT_CONFIGURED_MESSAGE = "尚未完成 AI 服務設定，請回到首頁完成設定。"
+ALREADY_CONFIGURED_MESSAGE = "AI 服務已經設定過了。如需更改，請重新 build 並啟動專案。"
+MODEL_NAME_PATTERN = re.compile(r"[A-Za-z0-9._:/-]{1,100}")
+
+
+def is_llm_error(text):
+    """backend 呼叫 AI 失敗時，回傳的文字一律以 "Error:" 或 "Connection Error:" 開頭。"""
+    return text.startswith(("Error:", "Connection Error:"))
+
+
+def get_expert():
+    """
+    回傳目前的 AI 服務；還沒設定就回傳 None。
+    設定一旦建立就不會再改變（要改只能重新 build 並啟動），所以讀到之後就快取起來。
+    每個 gunicorn worker 各自從設定檔讀，其中一個 worker 存好設定後，其他 worker 下次請求就讀得到。
+    """
+    global expert
+    if expert is None:
+        settings = llm_settings.load()
+        if settings:
+            provider = PROVIDERS[settings["provider"]]
+            expert = FossilExpert(api_key=settings["api_key"], api_url=provider["url"],
+                                  model_name=settings["model"], api_format=provider["format"])
+    return expert
+
 
 # 頁面路由
 @app.route("/")
 def index(): return render_template("index.html")
 
+# 還沒設定 AI 服務就先回首頁，首頁會跳出設定視窗
 @app.route("/chat")
-def chat_page(): return render_template("chat.html")
+def chat_page():
+    if get_expert() is None:
+        return redirect(url_for("index"))
+    return render_template("chat.html")
 
 @app.route("/map")
-def map_page(): return render_template("map.html")
+def map_page():
+    if get_expert() is None:
+        return redirect(url_for("index"))
+    return render_template("map.html")
+
+@app.route("/api/llm_config")
+@limiter.exempt
+def llm_config():
+    """給首頁的設定視窗用：是否已經設定好、可以選哪些服務。不會回傳金鑰。"""
+    return jsonify({
+        "configured": get_expert() is not None,
+        "default_provider": DEFAULT_PROVIDER,
+        "providers": [
+            {"id": pid, "label": p["label"], "default_model": p["default_model"]}
+            for pid, p in PROVIDERS.items()
+        ],
+    })
+
+@app.route("/api/llm_setup", methods=["POST"])
+@limiter.limit("5 per minute")
+def llm_setup():
+    """
+    首頁設定視窗送出的設定。只能設定一次：已經設定過就拒絕，不能從網頁覆蓋，
+    要改只能重新 build 並啟動專案。存之前會先用這組設定實際呼叫一次 AI，
+    確認金鑰與模型真的能用，避免存了一組壞掉的設定、卻又無法在網頁上修改。
+    """
+    if get_expert() is not None:
+        return jsonify({"error": ALREADY_CONFIGURED_MESSAGE}), 409
+
+    data = request.json or {}
+    provider_id = data.get("provider")
+    api_key = (data.get("api_key") or "").strip()
+    provider = PROVIDERS.get(provider_id)
+    if provider is None:
+        return jsonify({"error": "請選擇清單裡的服務。"}), 400
+    if not api_key:
+        return jsonify({"error": "請填入 API 金鑰。"}), 400
+    model = (data.get("model") or "").strip() or provider["default_model"]
+    if not MODEL_NAME_PATTERN.fullmatch(model):
+        return jsonify({"error": "模型名稱只能包含英數字與 . _ : / - 符號。"}), 400
+
+    candidate = FossilExpert(api_key=api_key, api_url=provider["url"], model_name=model, api_format=provider["format"])
+    reply = candidate._call_llm("Reply with the single word OK.", temperature=0.0)
+    if is_llm_error(reply):
+        return jsonify({"error": f"無法使用這組設定：{reply}"}), 400
+
+    try:
+        llm_settings.save(provider_id, api_key, model)
+    except FileExistsError:
+        return jsonify({"error": ALREADY_CONFIGURED_MESSAGE}), 409
+    get_expert()
+    return jsonify({"ok": True})
 
 @app.route("/graph/<graph_id>.png")
 @limiter.exempt  # 跟 static/ 的圖片一樣不計入限流，限流只是為了保護 LLM 額度
@@ -43,15 +127,6 @@ IRRELEVANT_REPLY = "🦖 術業有專攻，FossilMind 無法回答與化石無�
 
 
 # 共用工具函式
-def expert_for_request(data):
-    """
-    BYOK：使用者自己貼的金鑰，只在這一次請求裡用，絕對不 log、不存進資料庫、
-    不寫進任何檔案。沒有帶這個欄位就沿用伺服器自己的共用金鑰（本機開發情境）。
-    """
-    user_api_key = (data.get("user_api_key") or "").strip()
-    return FossilExpert(api_key=user_api_key) if user_api_key else expert
-
-
 def render_evolution_graph(dot_code):
     """
     把 DOT 程式碼渲染成 PNG 存進資料庫，回傳圖片網址；不是合法的 digraph 就回傳 None。
@@ -119,7 +194,9 @@ def chat_api_stream():
     if not user_input or not chat_id:
         return jsonify({"error": "No input"}), 400
 
-    request_expert = expert_for_request(data)
+    request_expert = get_expert()
+    if request_expert is None:
+        return jsonify({"error": NOT_CONFIGURED_MESSAGE}), 400
 
     def sse(event, payload):
         return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
@@ -148,7 +225,14 @@ def chat_api_stream():
                 # 逐字串流階段只有原始文字（可能還帶著 [[Wiki: ...]] 標記），
                 # 真正的圖片/演化圖要等文字生成完才查得到。這裡送出排版好的
                 # 最終定稿版本，前端收到後會整段換掉剛剛逐字顯示的內容。
-                final_text = build_identify_response(request_expert, "".join(raw_parts), user_input)
+                raw_response = "".join(raw_parts)
+                if is_llm_error(raw_response):
+                    # AI 服務出錯（忙碌、額度用完等）：不去找圖、不畫演化圖，也不把這段錯誤
+                    # 當成鑑定結果存起來，否則之後追問時會被拿去當背景
+                    final_text = f"⚠️ {raw_response}"
+                    intent = "ERROR"
+                else:
+                    final_text = build_identify_response(request_expert, raw_response, user_input)
                 yield sse("final", {"text": final_text})
 
             elif intent == "GRAPH":
@@ -186,7 +270,13 @@ def chat_api_stream():
 def api_bury():
     data = request.json
     try:
-        raw_data = expert_for_request(data).bury_fossil(data.get("lat"), data.get("lng"), data.get("era"))
+        request_expert = get_expert()
+        if request_expert is None:
+            return jsonify({"success": False, "error": NOT_CONFIGURED_MESSAGE})
+        raw_data = request_expert.bury_fossil(data.get("lat"), data.get("lng"), data.get("era"))
+        if is_llm_error(raw_data):
+            # LLM 呼叫失敗（例如金鑰無效），直接把原因告訴使用者，不要變成看不懂的 JSON 解析錯誤
+            return jsonify({"success": False, "error": raw_data})
         clean_json = raw_data.replace("```json", "").replace("```", "").strip()
         return jsonify({"success": True, "fossil": json.loads(clean_json)})
     except Exception as e:
@@ -198,7 +288,13 @@ def api_bury():
 def api_examine():
     data = request.json
     try:
-        explanation = expert_for_request(data).dig_fossil(str(data.get("fossil_info")))
+        request_expert = get_expert()
+        if request_expert is None:
+            return jsonify({"success": False, "explanation": NOT_CONFIGURED_MESSAGE})
+        explanation = request_expert.dig_fossil(str(data.get("fossil_info")))
+        if is_llm_error(explanation):
+            # 不要把錯誤訊息當成鑑定報告寫進挖掘日誌
+            return jsonify({"success": False, "explanation": explanation})
         return jsonify({"success": True, "explanation": explanation.replace("```html", "").replace("```", "").strip()})
     except Exception as e:
         print(f"Examine Error: {e}")

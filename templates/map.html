@@ -21,15 +21,22 @@
             cursor: crosshair; 
         }
         
-        /* 地圖懸浮控制項 */
-        .controls {
+        /* 地圖懸浮控制項；窄畫面時控制列會換行，不會被切掉 */
+        .map-overlay {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; background: rgba(255, 255, 255, 0.95);
-            padding: 12px 25px; border-radius: 50px;
+            z-index: 1000; width: calc(100% - 100px);
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            pointer-events: none;  /* 容器本身不擋住地圖的點擊，只有裡面的元素可以點 */
+        }
+        .map-overlay > * { pointer-events: auto; }
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 25px; border-radius: 28px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            display: flex; gap: 15px; align-items: center;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 15px; align-items: center;
             backdrop-filter: blur(5px); border: 1px solid rgba(0,0,0,0.1);
         }
+        .controls > * { white-space: nowrap; }
         select { padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; font-size: 1rem; outline: none; cursor: pointer; }
         .back-btn { text-decoration: none; color: #2c3e50; font-weight: bold; display: flex; align-items: center; gap: 5px; transition: 0.3s; }
         .back-btn:hover { color: #4a6fa5; }
@@ -133,6 +140,7 @@
 <body>
 
     <div id="map-container">
+        <div class="map-overlay">
         <div class="controls">
             <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
             <div style="width: 1px; height: 20px; background: #ddd;"></div>
@@ -142,6 +150,7 @@
                 <option value="Mesozoic" selected>中生代 (Mesozoic)</option>
                 <option value="Cenozoic">新生代 (Cenozoic)</option>
             </select>
+        </div>
         </div>
         <div id="map"></div>
     </div>
@@ -197,10 +206,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script>
-        // BYOK：沿用使用者在聊天頁設定的金鑰（同一個分頁的 sessionStorage），沒有設定就用伺服器的共用金鑰
-        function getUserApiKey() {
-            return sessionStorage.getItem('fossilmind_user_api_key') || '';
-        }
 
         function escapeHtml(str) {
             const div = document.createElement('div');
@@ -476,7 +481,7 @@
                 const res1 = await fetch('/api/bury', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lat, lng, era, user_api_key: getUserApiKey() || undefined })
+                    body: JSON.stringify({ lat, lng, era })
                 });
                 const data1 = await res1.json();
                 
@@ -494,9 +499,11 @@
                 const res2 = await fetch('/api/examine', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fossil_info: data1.fossil, user_api_key: getUserApiKey() || undefined })
+                    body: JSON.stringify({ fossil_info: data1.fossil })
                 });
                 const data2 = await res2.json();
+                // 報告沒寫成（例如 AI 服務忙碌）就當作這次挖掘失敗，不要把錯誤訊息當成報告顯示
+                if (!data2.success) throw new Error(data2.explanation || "Report failed");
 
                 // === 階段三：找圖片 (只有在「挖到東西」時才找) ===
                 let imageUrl = "";
@@ -506,7 +513,7 @@
                         let cleanName = data1.fossil.name_latin.replace(/\s+sp\.?$/i, "").replace(/\s+spp\.?$/i, "").trim();
                         console.log(`正在搜尋 Wiki 圖片: 原名[${data1.fossil.name_latin}] -> 清理後[${cleanName}]`);
 
-                        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${cleanName}&prop=pageimages&format=json&pithumbsize=500&redirects=1&origin=*`);
+                        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cleanName)}&prop=pageimages&format=json&pithumbsize=500&redirects=1&origin=*`);
                         const wikiData = await wikiRes.json();
                         
                         if (wikiData.query && wikiData.query.pages) {

@@ -3,6 +3,8 @@
 __pycache__
 *.pyc
 .env
+llm_settings.json
+.llm_settings.*.tmp
 chats.json
 chats.db*
 tests

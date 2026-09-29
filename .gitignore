@@ -2,6 +2,9 @@ __pycache__/
 *.pyc
 
 .env
+# 首頁設定視窗存下來的 AI 服務設定，含 API 金鑰
+llm_settings.json
+.llm_settings.*.tmp
 
 chats.json
 chats.db*

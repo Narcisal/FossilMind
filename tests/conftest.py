@@ -19,5 +19,9 @@ def isolated_db(tmp_path, monkeypatch):
 
     monkeypatch.setattr(config, "DB_FILE", str(tmp_path / "test.db"))
     monkeypatch.setattr(config, "LEGACY_JSON_FILE", str(tmp_path / "chats.json"))
+    # 首頁設定視窗存的設定檔也指到暫存資料夾，不會讀到或寫到專案裡真正的 llm_settings.json
+    monkeypatch.setattr(config, "SETTINGS_FILE", str(tmp_path / "llm_settings.json"))
+    # 遇到暫時性錯誤時 backend 會等幾秒再重試；測試裡不用真的等
+    monkeypatch.setattr("backend.time.sleep", lambda seconds: None)
     database.init_db()
     return tmp_path

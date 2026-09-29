@@ -63,13 +63,13 @@ Step 2: Install the Python packages
 pip install -r requirements.txt
 ```
 
-Step 3: Configure your API key
+Step 3 (optional): Create a `.env` file
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set `FOSSILMIND_API_KEY` to your own key. The application refuses to start without one; it never falls back to a hardcoded key.
+You can skip this step and configure the AI service in the browser instead (see step 5). If you set `FOSSILMIND_API_KEY` in `.env`, the server uses it directly and the setup dialog never appears. The key targets the NCKU course gateway by default; to use another service, set `FOSSILMIND_API_URL` and `FOSSILMIND_MODEL_NAME`, and set `FOSSILMIND_API_FORMAT` to `ollama` (NCKU gateway, local Ollama) or `openai` (any OpenAI-compatible chat completions endpoint). The application never falls back to a hardcoded key.
 
 ### 4. Run the Server
 
@@ -83,7 +83,28 @@ Once it has started, open http://127.0.0.1:5000 in your browser.
 
 The server runs with `debug=False` by default. For local development with verbose error pages, set `FLASK_DEBUG=true` in `.env`. Never enable this in a deployed environment.
 
-### 5. Run the Tests
+### 5. Configure the AI Service
+
+If no key is set in `.env`, the home page shows a setup dialog the first time it is opened. Choose a service, paste your API key, and optionally override the model:
+
+| Service | Default model |
+| :--- | :--- |
+| NCKU course API | `gpt-oss:20b` |
+| OpenAI | `gpt-6-luna` |
+| Google Gemini | `gemini-3.8-flash` |
+
+The server sends one short test request before saving, so an invalid key or model is rejected immediately. The settings are saved to `llm_settings.json` on the server (ignored by Git and Docker) and apply to every page and every visitor; until they are saved, the chat and map pages redirect to the home page.
+
+**The settings cannot be changed from the website.** To change them, rebuild and restart the project:
+
+- Docker: rebuild the image and start a new container (`docker build` and `docker run` in step 7). The settings live inside the container, so a new container starts unconfigured.
+- Running with `python app.py`: delete `llm_settings.json` and restart the server.
+
+Service endpoints are fixed on the server, so the setup dialog cannot make it connect to arbitrary addresses. To offer more services, add entries to `PROVIDERS` in `config.py`.
+
+For local development without an API key, set `FOSSILMIND_LOCAL_OLLAMA_URL` (for example `http://localhost:11434/api/chat`) to add a **本機 Ollama** (local Ollama) option to the dialog; Ollama accepts any key. Do not set it in a deployed environment.
+
+### 6. Run the Tests
 
 ```bash
 pip install -r requirements-dev.txt
@@ -92,7 +113,7 @@ python -m pytest tests/ -v
 
 All LLM calls are mocked in the test suite, so no real API key or network access is required.
 
-### 6. Run with Docker (alternative to steps 1–4)
+### 7. Run with Docker (alternative to steps 1–4)
 
 ```bash
 docker build -t fossilmind .

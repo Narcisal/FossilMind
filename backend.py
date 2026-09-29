@@ -1,17 +1,69 @@
 import requests
 import json
 import re
-from config import API_KEY, API_URL, MODEL_NAME 
+import time
+from config import API_KEY, API_URL, MODEL_NAME, API_FORMAT
+
+# 暫時性的錯誤：請求太頻繁（429）、服務商忙碌或暫時故障（5xx）。等一下再試通常就會成功
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+MAX_RETRIES = 2
+
+
+def _retry_delay(response, attempt):
+    """服務商有用 Retry-After 指定等待秒數（而且不會太久）就照它，否則依序等 2、4 秒。"""
+    retry_after = (getattr(response, "headers", None) or {}).get("Retry-After", "")
+    if retry_after.isdigit() and int(retry_after) <= 10:
+        return int(retry_after)
+    return 2 ** (attempt + 1)
+
+
+def _provider_detail(response):
+    """從服務商的錯誤回應裡取出人看得懂的那句話（例如模型不存在），取不到就用原始內容的開頭。"""
+    try:
+        body = response.json()
+        if isinstance(body, list) and body:
+            body = body[0]
+        error = body.get("error", body) if isinstance(body, dict) else body
+        message = error.get("message") if isinstance(error, dict) else error
+        if isinstance(message, str) and message:
+            return message
+    except Exception:
+        pass
+    return (getattr(response, "text", "") or "")[:300]
+
+
+def _error_message(response):
+    """
+    把失敗的回應轉成要顯示給使用者的訊息，一律以 "Error: <狀態碼>" 開頭（呼叫端靠這個判斷失敗）。
+    這段文字會顯示在網頁上、也會存進對話紀錄，所以不直接轉貼服務商的原始 JSON。
+    """
+    status = response.status_code
+    if status in (401, 403):
+        # 不附上服務商的內容：有些服務商會在錯誤訊息裡帶出部分金鑰
+        return f"Error: {status} - API 金鑰無效，或沒有使用這個模型的權限。"
+    if status == 429:
+        return f"Error: {status} - AI 服務的請求太頻繁或額度已用完，請稍後再試。"
+    if status >= 500:
+        return f"Error: {status} - AI 服務目前忙碌或暫時無法使用，請稍後再試。"
+    return f"Error: {status} - {_provider_detail(response)}"
 
 
 class FossilExpert:
-    def __init__(self, api_key=API_KEY, api_url=API_URL, model_name=MODEL_NAME):
+    """
+    api_format 決定請求與回應的格式：
+    - "ollama"：NCKU gateway 與本機 Ollama。非串流回傳 {"message": {"content": ...}}，
+      串流回傳逐行 NDJSON，每行是 {"message": {"content": "..."}, "done": bool}。
+    - "openai"：OpenAI 相容的 chat completions（OpenAI、Gemini 等）。非串流回傳
+      {"choices": [{"message": {"content": ...}}]}，串流是 SSE，每行 "data: {...}"，以 "data: [DONE]" 結束。
+    """
+
+    def __init__(self, api_key=API_KEY, api_url=API_URL, model_name=MODEL_NAME, api_format=API_FORMAT):
         self.api_key = api_key
         self.api_url = api_url
         self.model_name = model_name
+        self.api_format = api_format
 
-    def _call_llm(self, prompt, temperature=0.7):
-        """內部函式：負責發送 API 請求"""
+    def _request(self, prompt, temperature, stream):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -19,54 +71,71 @@ class FossilExpert:
         data = {
             "model": self.model_name,
             "messages": [{"role": "user", "content": prompt}],
-            "stream": False,
+            "stream": stream,
             "temperature": temperature
         }
+        return requests.post(self.api_url, headers=headers, json=data, timeout=300, stream=stream)
+
+    def _request_with_retry(self, prompt, temperature, stream):
+        """遇到暫時性錯誤時自動重試，最多 MAX_RETRIES 次；最後一次的回應不論成功與否都交給呼叫端處理。"""
+        for attempt in range(MAX_RETRIES + 1):
+            response = self._request(prompt, temperature, stream)
+            if response.status_code not in RETRYABLE_STATUS or attempt == MAX_RETRIES:
+                return response
+            delay = _retry_delay(response, attempt)
+            print(f"[LLM] HTTP {response.status_code}, retrying in {delay}s ({attempt + 1}/{MAX_RETRIES})")
+            if hasattr(response, "close"):
+                response.close()
+            time.sleep(delay)
+
+    def _call_llm(self, prompt, temperature=0.7):
+        """內部函式：負責發送 API 請求"""
         try:
-            response = requests.post(self.api_url, headers=headers, json=data, timeout=300)
-            if response.status_code == 200:
-                return response.json().get("message", {}).get("content", "")
-            else:
-                return f"Error: {response.status_code} - {response.text}"
+            response = self._request_with_retry(prompt, temperature, stream=False)
+            if response.status_code != 200:
+                return _error_message(response)
+            body = response.json()
+            if self.api_format == "openai":
+                return (body.get("choices") or [{}])[0].get("message", {}).get("content") or ""
+            return body.get("message", {}).get("content", "")
         except Exception as e:
             return f"Connection Error: {str(e)}"
 
     def _call_llm_stream(self, prompt, temperature=0.7):
-        """
-        內部函式：streaming 版本，逐段 yield 文字片段。
-        NOTE: gateway 是 Ollama 相容格式（model/messages/stream 欄位、非 stream 時回傳
-        {"message": {"content": ...}}），這裡假設 stream=True 時回傳逐行 NDJSON，
-        每行是 {"message": {"content": "..."}, "done": bool}，這是 Ollama 的標準行為。
-        因為目前沒有可用的金鑰，這個假設還沒有實際對真正的 gateway 驗證過，
-        如果實測發現格式不同，只要改這個函式內部的解析邏輯即可，呼叫端不用動。
-        """
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": self.model_name,
-            "messages": [{"role": "user", "content": prompt}],
-            "stream": True,
-            "temperature": temperature
-        }
+        """內部函式：streaming 版本，逐段 yield 文字片段。"""
         try:
-            with requests.post(self.api_url, headers=headers, json=data, timeout=300, stream=True) as response:
+            with self._request_with_retry(prompt, temperature, stream=True) as response:
                 if response.status_code != 200:
-                    yield f"Error: {response.status_code} - {response.text}"
+                    yield _error_message(response)
                     return
+                # 串流回應常常沒標 charset，requests 會把每行當成 bytes；統一用 UTF-8 解碼
+                response.encoding = "utf-8"
                 for line in response.iter_lines(decode_unicode=True):
                     if not line:
                         continue
-                    try:
-                        chunk = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    piece = chunk.get("message", {}).get("content", "")
-                    if piece:
-                        yield piece
-                    if chunk.get("done"):
-                        break
+                    if self.api_format == "openai":
+                        if not line.startswith("data:"):
+                            continue
+                        payload = line[len("data:"):].strip()
+                        if payload == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(payload)
+                        except json.JSONDecodeError:
+                            continue
+                        piece = ((chunk.get("choices") or [{}])[0].get("delta") or {}).get("content")
+                        if piece:
+                            yield piece
+                    else:
+                        try:
+                            chunk = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        piece = chunk.get("message", {}).get("content", "")
+                        if piece:
+                            yield piece
+                        if chunk.get("done"):
+                            break
         except Exception as e:
             yield f"Connection Error: {str(e)}"
 
@@ -277,6 +346,12 @@ class FossilExpert:
         【強制語言規範】
         1. **全程使用繁體中文 (Traditional Chinese, Taiwan)**。
         2. 輸出格式為 HTML (不包含 ```html 標記)。
+
+        【輸出格式規範】
+        1. 只輸出報告的內文段落，直接從內容開始寫。
+        2. **不要**加報告標題、撰寫人、鑑定日期、署名、編號或任何頁首頁尾資訊
+           （網頁上已經會顯示物種名稱，這些資訊是多餘的）。
+        3. **不要**輸出 <html>、<head>、<title>、<body> 等整頁的標籤，只用 <p>、<ul>、<li>、<strong> 這類內文標籤。
         """
         return self._call_llm(prompt)
     

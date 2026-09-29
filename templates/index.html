@@ -112,6 +112,55 @@
         .footer-section { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 10; }
         .footer-section h2 { font-family: 'Playfair Display', serif; font-size: 4rem; margin-bottom: 40px; font-style: italic; color: white; }
 
+        /* --- 首次設定視窗 --- */
+        .setup-overlay {
+            position: fixed; inset: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: center; padding: 16px;
+            background: rgba(5, 5, 8, 0.6); backdrop-filter: blur(12px);
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .setup-overlay[hidden] { display: none; }
+        .setup-overlay.visible { opacity: 1; }
+        .setup-card {
+            width: 100%; max-width: 460px; box-sizing: border-box; padding: 40px 36px;
+            background: rgba(22, 24, 30, 0.85); border: 1px solid var(--glass-border); border-radius: 16px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            transform: translateY(16px); transition: transform 0.4s;
+        }
+        .setup-overlay.visible .setup-card { transform: none; }
+        .setup-card h3 {
+            font-family: 'Playfair Display', serif; font-style: italic; font-size: 2.2rem; margin: 0 0 8px;
+            background: linear-gradient(135deg, #fff 30%, #a8c7fa 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .setup-card .setup-lead { margin: 0 0 28px; color: #aaa; font-size: 0.95rem; line-height: 1.7; }
+        .setup-field { margin-bottom: 18px; }
+        .setup-field label { display: block; margin-bottom: 8px; font-size: 0.8rem; letter-spacing: 1px; color: #999; }
+        .setup-field label .optional { color: #666; letter-spacing: 0; }
+        .setup-field select, .setup-field input {
+            width: 100%; box-sizing: border-box; padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.06); color: #eee; border: 1px solid var(--glass-border); border-radius: 8px;
+            font: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s, background 0.2s;
+        }
+        .setup-field select option { background: #1a1c22; color: #eee; }
+        .setup-field select:focus, .setup-field input:focus { border-color: var(--primary-accent); background: rgba(255, 255, 255, 0.09); }
+        .setup-field input::placeholder { color: #666; }
+        .setup-error {
+            margin: 0 0 18px; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; line-height: 1.6;
+            background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); color: #f5b7b1;
+            word-break: break-word;
+        }
+        .setup-error[hidden] { display: none; }
+        .setup-submit {
+            width: 100%; justify-content: center; cursor: pointer; font: inherit;
+            padding: 15px 20px; font-size: 0.95rem; letter-spacing: 2px;
+            background: rgba(168, 199, 250, 0.15); border: 1px solid rgba(168, 199, 250, 0.4); color: var(--primary-accent);
+            transition: 0.3s; display: flex; align-items: center; gap: 10px;
+        }
+        .setup-submit:hover:not(:disabled) { background: var(--primary-accent); color: #0b0b0c; box-shadow: 0 0 30px rgba(168, 199, 250, 0.3); }
+        .setup-submit:disabled { cursor: wait; opacity: 0.7; }
+        .setup-note { margin: 18px 0 0; font-size: 0.78rem; line-height: 1.6; color: #777; text-align: center; }
+
         @media (max-width: 900px) {
             .grid-layout { grid-template-columns: 1fr; gap: 40px; }
             .story-section:nth-child(even) .grid-layout { direction: ltr; }
@@ -238,7 +287,123 @@
         <!-- <p style="margin-top: 50px; color: #888; font-size: 0.8rem;">© 2025 FossilMind Project.</p> -->
     </section>
 
+    <!-- 首次設定視窗：伺服器還沒設定 AI 服務時才會出現 -->
+    <div id="setup-overlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="setup-title">
+        <form id="setup-form" class="setup-card" novalidate>
+            <h3 id="setup-title">Before We Dig</h3>
+            <p class="setup-lead">FossilMind 需要連接一個 AI 服務才能運作。請選擇服務並填入你的 API 金鑰。</p>
+
+            <div class="setup-field">
+                <label for="setup-provider">服務</label>
+                <select id="setup-provider"></select>
+            </div>
+            <div class="setup-field">
+                <label for="setup-key">API 金鑰</label>
+                <input type="password" id="setup-key" autocomplete="off" placeholder="貼上你的 API 金鑰">
+            </div>
+            <div class="setup-field">
+                <label for="setup-model">模型 <span class="optional">（選填）</span></label>
+                <input type="text" id="setup-model" autocomplete="off">
+            </div>
+
+            <p id="setup-error" class="setup-error" role="alert" hidden></p>
+            <button type="submit" id="setup-submit" class="setup-submit">
+                <i class="fa-solid fa-arrow-right"></i> <span>驗證並開始使用</span>
+            </button>
+            <p class="setup-note">設定完成後無法在網頁上修改。如需更改，請重新 build 並啟動專案。</p>
+        </form>
+    </div>
+
     <script>
+        // --- 首次設定：伺服器還沒設定 AI 服務時，跳出視窗讓使用者填 ---
+        (async function setupLlm() {
+            let config;
+            try {
+                config = await (await fetch('/api/llm_config')).json();
+            } catch (e) {
+                console.error('無法取得 AI 服務設定', e);
+                return;
+            }
+            if (config.configured) return;
+
+            const overlay = document.getElementById('setup-overlay');
+            const form = document.getElementById('setup-form');
+            const providerSelect = document.getElementById('setup-provider');
+            const keyInput = document.getElementById('setup-key');
+            const modelInput = document.getElementById('setup-model');
+            const errorBox = document.getElementById('setup-error');
+            const submitBtn = document.getElementById('setup-submit');
+            const submitLabel = submitBtn.querySelector('span');
+
+            for (const p of config.providers) {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.label;
+                providerSelect.appendChild(option);
+            }
+            providerSelect.value = config.default_provider;
+
+            function refreshModelPlaceholder() {
+                const p = config.providers.find(x => x.id === providerSelect.value);
+                modelInput.placeholder = p ? `預設 ${p.default_model}` : '';
+            }
+            providerSelect.addEventListener('change', () => { modelInput.value = ''; refreshModelPlaceholder(); });
+            refreshModelPlaceholder();
+
+            function showError(message) {
+                errorBox.textContent = message;
+                errorBox.hidden = !message;
+            }
+
+            // 必須完成設定才能使用，所以不提供關閉按鈕，也不能用 Esc 或點背景關掉；
+            // 背景內容設成 inert，鍵盤 Tab 也不會跳到後面的連結
+            const background = [...document.body.children].filter(el => el !== overlay && el.tagName !== 'SCRIPT');
+            background.forEach(el => el.inert = true);
+            overlay.hidden = false;
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => overlay.classList.add('visible'));
+            keyInput.focus();
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!keyInput.value.trim()) {
+                    showError('請填入 API 金鑰。');
+                    keyInput.focus();
+                    return;
+                }
+                showError('');
+                submitBtn.disabled = true;
+                submitLabel.textContent = '驗證中，可能需要數十秒…';
+                try {
+                    const res = await fetch('/api/llm_setup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            provider: providerSelect.value,
+                            api_key: keyInput.value.trim(),
+                            model: modelInput.value.trim()
+                        })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    // 409：別人（或另一個分頁）已經先設定好了，一樣可以直接開始用
+                    if (!res.ok && res.status !== 409) throw new Error(data.error || `HTTP ${res.status}`);
+
+                    keyInput.value = '';  // 設定已經存在伺服器，頁面上不要再留著金鑰
+                    overlay.classList.remove('visible');
+                    setTimeout(() => {
+                        overlay.hidden = true;
+                        document.body.style.overflow = '';
+                        background.forEach(el => el.inert = false);
+                    }, 400);
+                } catch (err) {
+                    showError(err.message);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitLabel.textContent = '驗證並開始使用';
+                }
+            });
+        })();
+
         gsap.registerPlugin(ScrollTrigger);
 
         // Hero 進場

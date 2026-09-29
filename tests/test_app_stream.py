@@ -93,74 +93,6 @@ def test_stream_missing_input_returns_400(monkeypatch):
     assert res.status_code == 400
 
 
-def test_stream_uses_user_supplied_key_when_provided(monkeypatch):
-    """BYOK：帶了 user_api_key 就該用一個新的 FossilExpert 實例，且用那把金鑰。"""
-    client = make_client(monkeypatch)
-    created_with = []
-
-    class FakeExpert:
-        def __init__(self, api_key=None, api_url=None, model_name=None):
-            created_with.append(api_key)
-
-        def determine_intent(self, text):
-            return "IRRELEVANT"
-
-    monkeypatch.setattr(app_module, "FossilExpert", FakeExpert)
-
-    res = client.post(
-        "/chat_api_stream",
-        json={"message": "哈囉", "chat_id": "t6", "user_api_key": "sk-user-own-key"},
-    )
-    res.get_data()
-
-    assert created_with == ["sk-user-own-key"]
-
-
-def test_stream_falls_back_to_shared_expert_without_user_key(monkeypatch):
-    """沒帶 user_api_key 時應該沿用共用的 expert，而不是每次都重新建立一個。"""
-    client = make_client(monkeypatch)
-    monkeypatch.setattr(app_module.expert, "determine_intent", lambda text: "IRRELEVANT")
-
-    calls = []
-    original_init = app_module.FossilExpert.__init__
-
-    def spy_init(self, *a, **k):
-        calls.append(k.get("api_key"))
-        return original_init(self, *a, **k)
-
-    monkeypatch.setattr(app_module.FossilExpert, "__init__", spy_init)
-
-    res = client.post("/chat_api_stream", json={"message": "哈囉", "chat_id": "t7"})
-    res.get_data()
-
-    # 沒有 user_api_key 就不該建立任何新的 FossilExpert 實例
-    assert calls == []
-
-
-def test_stream_user_key_never_saved_to_db(monkeypatch, isolated_db):
-    """使用者貼的金鑰絕對不能出現在資料庫檔案裡。"""
-    client = make_client(monkeypatch)
-
-    class FakeExpert:
-        def __init__(self, api_key=None, api_url=None, model_name=None):
-            pass
-
-        def determine_intent(self, text):
-            return "IRRELEVANT"
-
-    monkeypatch.setattr(app_module, "FossilExpert", FakeExpert)
-
-    res = client.post(
-        "/chat_api_stream",
-        json={"message": "哈囉", "chat_id": "t8", "user_api_key": "sk-super-secret-value"},
-    )
-    res.get_data()
-
-    assert database.get_messages("t8")  # 確認這輪對話確實有存
-    for f in isolated_db.glob("test.db*"):
-        assert b"sk-super-secret-value" not in f.read_bytes()
-
-
 def test_stream_llm_exception_is_reported_not_raised(monkeypatch):
     client = make_client(monkeypatch)
     monkeypatch.setattr(app_module.expert, "determine_intent", lambda text: "IDENTIFY")
@@ -271,38 +203,42 @@ def test_unknown_graph_returns_404(monkeypatch):
     assert client.get("/graph/does-not-exist.png").status_code == 404
 
 
-class _KeyRecordingExpert:
-    created_with = []
-
-    def __init__(self, api_key=None, api_url=None, model_name=None):
-        _KeyRecordingExpert.created_with.append(api_key)
-
-    def bury_fossil(self, lat, lng, era):
-        return '{"found": false, "reason": "test"}'
-
-    def dig_fossil(self, info):
-        return "<p>report</p>"
-
-
-def test_map_apis_use_user_supplied_key(monkeypatch):
+def test_identify_failure_is_shown_but_not_used_as_context(monkeypatch):
+    """AI 服務忙碌時：顯示錯誤、不去找圖畫圖，也不能把錯誤訊息存成鑑定結果（否則之後追問會拿它當背景）。"""
     client = make_client(monkeypatch)
-    _KeyRecordingExpert.created_with = []
-    monkeypatch.setattr(app_module, "FossilExpert", _KeyRecordingExpert)
+    error = "Error: 503 - AI 服務目前忙碌或暫時無法使用，請稍後再試。"
+    monkeypatch.setattr(app_module.expert, "determine_intent", lambda text: "IDENTIFY")
+    monkeypatch.setattr(app_module.expert, "identify_fossil_stream", lambda desc: iter([error]))
+    looked_up = []
+    monkeypatch.setattr(app_module, "get_wiki_image", lambda q: looked_up.append(q))
 
-    bury = client.post("/api/bury", json={"lat": 1, "lng": 2, "era": "中生代", "user_api_key": "sk-user"}).get_json()
-    examine = client.post("/api/examine", json={"fossil_info": {"found": False}, "user_api_key": "sk-user"}).get_json()
+    events = parse_sse(client.post("/chat_api_stream", json={"message": "菊石", "chat_id": "e1"}).get_data(as_text=True))
 
-    assert bury["success"] and examine["success"]
-    assert _KeyRecordingExpert.created_with == ["sk-user", "sk-user"]
+    final = [d for e, d in events if e == "final"][0]["text"]
+    assert final == f"⚠️ {error}"
+    assert looked_up == []
+    assert database.get_messages("e1")[-1]["intent"] == "ERROR"
+    assert database.get_last_identify_context("e1") == ""
 
 
-def test_map_apis_fall_back_to_shared_expert(monkeypatch):
+def test_map_examine_failure_is_not_shown_as_a_report(monkeypatch):
     client = make_client(monkeypatch)
-    _KeyRecordingExpert.created_with = []
-    monkeypatch.setattr(app_module, "FossilExpert", _KeyRecordingExpert)
-    monkeypatch.setattr(app_module.expert, "bury_fossil", lambda lat, lng, era: '{"found": false}')
+    monkeypatch.setattr(app_module.expert, "dig_fossil",
+                        lambda info: "Error: 503 - AI 服務目前忙碌或暫時無法使用，請稍後再試。")
+
+    res = client.post("/api/examine", json={"fossil_info": {"found": True}}).get_json()
+
+    assert res["success"] is False
+    assert "請稍後再試" in res["explanation"]
+
+
+def test_map_bury_passes_llm_error_through(monkeypatch):
+    """金鑰無效時要直接顯示原因，而不是 JSON 解析失敗的訊息。"""
+    client = make_client(monkeypatch)
+    monkeypatch.setattr(app_module.expert, "bury_fossil",
+                        lambda lat, lng, era: "Error: 401 - API 金鑰無效，或沒有使用這個模型的權限。")
 
     res = client.post("/api/bury", json={"lat": 1, "lng": 2, "era": "中生代"}).get_json()
 
-    assert res["success"]
-    assert _KeyRecordingExpert.created_with == []
+    assert res == {"success": False, "error": "Error: 401 - API 金鑰無效，或沒有使用這個模型的權限。"}
+
